@@ -13,10 +13,14 @@ module.exports = function(grunt) {
         src: ['src/javascript/module_begin.js', 'src/javascript/httpclient.js','src/javascript/safeslingerexchange.js','src/javascript/module_end.js'],
         dest: 'build/safeslinger.js'
       },
+      ui : {
+        src: ['src/javascript/ui/module_begin.js','src/javascript/ui/constructUI.js','src/javascript/ui/landingpage.js','src/javascript/ui/module_end.js'],
+        dest: 'build/safeslinger-ui.js'
+      }
     },
     watch: {
       scripts: {
-        files: ['src/javascript/*.js'],
+        files: ['src/javascript/*.js','src/javascript/ui/*.js'],
         tasks: ['concat'],
         options: {
           interrupt: true,
@@ -43,7 +47,7 @@ module.exports = function(grunt) {
       },
       dist: {
         files: {
-          src: ['<%= concat.dist.dest %>']
+          src: ['<%= concat.dist.dest %>', '<%= concat.dist.ui %>']
         }
       }
     }
@@ -53,5 +57,5 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
 
   grunt.registerTask('default', ['build']);
-  grunt.registerTask('build', ['concat:dist', 'jshint:dist']);
+  grunt.registerTask('build', ['concat:dist', 'concat:ui', 'jshint:dist']);
 }

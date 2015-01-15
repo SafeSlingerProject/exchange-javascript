@@ -14,7 +14,10 @@ module.exports = function(grunt) {
         dest: 'build/safeslinger.js'
       },
       ui : {
-        src: ['src/javascript/ui/module_begin.js','src/javascript/ui/constructUI.js','src/javascript/ui/landingpage.js','src/javascript/ui/module_end.js'],
+        src: ['src/javascript/ui/module_begin.js','src/javascript/ui/constructUI.js',
+        'src/javascript/ui/landingpage.js', 'src/javascript/ui/numofusers.js', 
+        'src/javascript/ui/lowestnumber.js','src/javascript/ui/showphrases.js',
+        'src/javascript/ui/module_end.js'],
         dest: 'build/safeslinger-ui.js'
       }
     },

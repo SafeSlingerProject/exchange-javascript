@@ -6,6 +6,7 @@ SafeSlingerUI.prototype.showServerSecretView = function() {
 	var serverInput = document.createElement("input");
 	serverInput.type = "text";
 	serverInput.id = "server-input";
+	serverDiv.insertAdjacentHTML("afterbegin", "Server:");
 	serverDiv.appendChild(serverInput);
 	self.container.appendChild(serverDiv);
 
@@ -15,6 +16,7 @@ SafeSlingerUI.prototype.showServerSecretView = function() {
 	var secretInput = document.createElement("input");
 	secretInput.type = "text";
 	secretInput.id = "secret-input";
+	secretDiv.insertAdjacentHTML("afterbegin", "Secret:");
 	secretDiv.appendChild(secretInput);
 	self.container.appendChild(secretDiv);
 
@@ -31,7 +33,12 @@ SafeSlingerUI.prototype.showServerSecretView = function() {
 		var secret = document.getElementById("secret-input").value;
 		var con = new SafeSlinger.HTTPSConnection(url, secret);
 		self.connection = con;
-		self.connection.doPost("/assignUser");
+		self.connection.doPost("/assignUser", "data", function (){
+			// -- Adding just to test UI. Otherwise this condition should show error.
+			if(self.connection.response = "Request was formatted incorrectly."){
+				self.showGetNumView();
+			}
+		});
 	}, false);
 	self.container.appendChild(button);
 };

@@ -3,7 +3,7 @@ SafeSlinger.HTTPSConnection = function (url, secret){
 	this.secret = secret;
 };
 
-SafeSlinger.HTTPSConnection.prototype.doPost = function(name, packetdata) {
+SafeSlinger.HTTPSConnection.prototype.doPost = function(name, packetdata, callback) {
 	var self = this;
 	var xhr = new XMLHttpRequest();
 	xhr.open("POST", self.url + name, false);
@@ -12,7 +12,9 @@ SafeSlinger.HTTPSConnection.prototype.doPost = function(name, packetdata) {
 		var response = xhr.response;
 		console.log(xhr);
 		if(xhr.status === 200){
+			self.response = response;
 			console.log(response + xhr.status);
+			callback();
 		}else{
 			console.log("Network error: return code" + xhr.status + ", reason = " + xhr.statusText);
 		}

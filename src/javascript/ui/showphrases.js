@@ -37,7 +37,7 @@ SafeSlingerUI.prototype.showPhrases = function() {
 
 	var next = document.createElement("input");
 	next.type = "submit";
-	next.id = "nexy";
+	next.id = "next";
 	next.value = "Next";
 
 	var br = document.createElement("br");

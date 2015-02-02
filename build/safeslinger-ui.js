@@ -14,6 +14,8 @@ SafeSlingerUI.prototype.showServerSecretView = function() {
 	var serverInput = document.createElement("input");
 	serverInput.type = "text";
 	serverInput.id = "server-input";
+	serverInput.innerHTML = "https://slinger-dev.appspot.com"
+	serverInput.value = "https://slinger-dev.appspot.com";
 	serverDiv.insertAdjacentHTML("afterbegin", "Server:");
 	serverDiv.appendChild(serverInput);
 	self.container.appendChild(serverDiv);
@@ -38,8 +40,14 @@ SafeSlingerUI.prototype.showServerSecretView = function() {
 		if(!url){
 			url = "https://slinger-dev.appspot.com";
 		}
-		var secret = document.getElementById("secret-input").value;
-		var con = new SafeSlinger.HTTPSConnection(url, secret);
+		if(!SafeSlingerUI.util.validateLink(url)){
+			return false;
+		}
+		self.secret = document.getElementById("secret-input").value;
+		if(self.secret == null || self.secret == ""){
+			return false;
+		}
+		var con = new SafeSlinger.HTTPSConnection(url, self.secret);
 		self.connection = con;
 		self.connection.doPost("/assignUser", "data", function (){
 			// -- Adding just to test UI. Otherwise this condition should show error.
@@ -72,6 +80,9 @@ SafeSlingerUI.prototype.showGetNumView = function() {
 	submit.id = 'submit-users';
 	submit.addEventListener("click", function (){
 		console.log(document.getElementById("num-users").value);
+		var ssExchange = new SafeSlinger.SafeSlingerExchange();
+		self.ssExchange = ssExchange;
+		self.ssExchange.beginExchange(self.secret);
 		self.enterLowestNumber();
 	});
 	self.container.appendChild(numberDiv);
@@ -140,7 +151,7 @@ SafeSlingerUI.prototype.showPhrases = function() {
 
 	var next = document.createElement("input");
 	next.type = "submit";
-	next.id = "nexy";
+	next.id = "next";
 	next.value = "Next";
 
 	var br = document.createElement("br");
@@ -156,5 +167,51 @@ SafeSlingerUI.prototype.showPhrases = function() {
 
 	self.container.appendChild(phraseDiv);
 };
+SafeSlingerUI.util = {};
+
+SafeSlingerUI.util.validateLink = function (link) {
+	/*
+	** Regex Source: https://gist.github.com/dperini/729294
+	*/
+	var re_weburl = new RegExp(
+	  "^" +
+	    // protocol identifier
+	    "(?:(?:https?|ftp)://)" +
+	    // user:pass authentication
+	    "(?:\\S+(?::\\S*)?@)?" +
+	    "(?:" +
+	      // IP address exclusion
+	      // private & local networks
+	      "(?!(?:10|127)(?:\\.\\d{1,3}){3})" +
+	      "(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})" +
+	      "(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})" +
+	      // IP address dotted notation octets
+	      // excludes loopback network 0.0.0.0
+	      // excludes reserved space >= 224.0.0.0
+	      // excludes network & broacast addresses
+	      // (first & last IP address of each class)
+	      "(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])" +
+	      "(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}" +
+	      "(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))" +
+	    "|" +
+	      // host name
+	      "(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)" +
+	      // domain name
+	      "(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*" +
+	      // TLD identifier
+	      "(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))" +
+	    ")" +
+	    // port number
+	    "(?::\\d{2,5})?" +
+	    // resource path
+	    "(?:/\\S*)?" +
+	  "$", "i"
+	);
+	return re_weburl.test(link);
+};
+
+SafeSlingerUI.util.isNum = function (number){
+	return !isNaN(number);
+}
 	return SafeSlingerUI;
 })();

@@ -6,7 +6,7 @@ SafeSlinger.HTTPSConnection = function (url, secret){
 SafeSlinger.HTTPSConnection.prototype.doPost = function(name, packetdata, callback) {
 	var self = this;
 	var xhr = new XMLHttpRequest();
-	xhr.open("POST", self.url + name, false);
+	xhr.open("POST", self.url + name, true);
 	xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
 	xhr.onload = function (e){
 		var response = xhr.response;

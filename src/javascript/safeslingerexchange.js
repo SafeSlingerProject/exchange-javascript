@@ -1,15 +1,15 @@
-SafeSlinger.SafeSlingerExchange = function (address){
+SafeSlinger.SafeSlingerExchange = function (){
 	var self = this;
 	// networking object
 	self.version = 1 << 24 | 7 << 16;
-	self.address = address;
+	self.address = null;
 	self.httpclient = null;
 	//predefined data structures
 	self.matchNonce = null;
 	self.wrongNonce = null;
 	self.matchExtrahash = null;
 	self.matchHash = null;
-	self.encryptedHata = null;
+	self.encryptedData = null;
 	self.protocolCommitment = null;
 	self.dhkey = null;
 	self.dhpubkey = null;
@@ -31,4 +31,24 @@ SafeSlinger.SafeSlingerExchange = function (address){
 	self.matchHashSet = {};
 	self.keyNodes = {};
 	self.matchNonceSet = {};
+};
+
+SafeSlinger.SafeSlingerExchange.prototype.beginExchange = function (data) {
+	var self = this;
+	self.matchNonce = new Uint32Array(1);
+	window.crypto.getRandomValues(self.matchNonce);
+	self.wrongNonce = new Uint32Array(1);
+	window.crypto.getRandomValues(self.wrongNonce);
+
+	self.matchExtrahash = CryptoJS.SHA3(self.matchNonce[0].toString(), {outputLength: 256});
+	self.wrongHash = CryptoJS.SHA3(self.wrongNonce[0].toString(), {outputLength: 256});
+	self.matchHash = CryptoJS.SHA3(self.matchExtrahash, {outputLength: 256});
+	console.log(self.matchHash.toString());
+	console.log(self.wrongHash.toString());
+
+	self.encryptedData = CryptoJS.AES.encrypt(data, self.matchNonce[0].toString());
+	console.log(self.encryptedData.toString());
+
+	var dh = new SafeSlinger.DiffieHellman();
+	dh.showParams();
 };

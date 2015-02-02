@@ -10,20 +10,22 @@ module.exports = function(grunt) {
       },
       
       dist: {
-        src: ['src/javascript/module_begin.js', 'src/javascript/httpclient.js','src/javascript/safeslingerexchange.js','src/javascript/module_end.js'],
+        src: ['src/javascript/module_begin.js', 'src/javascript/httpclient.js',
+        'src/javascript/safeslingerexchange.js','src/javascript/dh.js','src/javascript/module_end.js'],
         dest: 'build/safeslinger.js'
       },
       ui : {
         src: ['src/javascript/ui/module_begin.js','src/javascript/ui/constructUI.js',
         'src/javascript/ui/landingpage.js', 'src/javascript/ui/numofusers.js', 
         'src/javascript/ui/lowestnumber.js','src/javascript/ui/showphrases.js',
+        'src/javascript/util/SafeSlingerUIUtil.js',
         'src/javascript/ui/module_end.js'],
         dest: 'build/safeslinger-ui.js'
       }
     },
     watch: {
       scripts: {
-        files: ['src/javascript/*.js','src/javascript/ui/*.js'],
+        files: ['src/javascript/*.js','src/javascript/ui/*.js', 'src/javascript/util/*.js'],
         tasks: ['concat'],
         options: {
           interrupt: true,

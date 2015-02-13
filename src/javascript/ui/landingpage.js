@@ -39,14 +39,8 @@ SafeSlingerUI.prototype.showServerSecretView = function() {
 		if(self.secret == null || self.secret == ""){
 			return false;
 		}
-		var con = new SafeSlinger.HTTPSConnection(url, self.secret);
-		self.connection = con;
-		self.connection.doPost("/assignUser", "data", function (){
-			// -- Adding just to test UI. Otherwise this condition should show error.
-			if(self.connection.response = "Request was formatted incorrectly."){
-				self.showGetNumView();
-			}
-		});
+		self.address = url;
+		self.showGetNumView();
 	}, false);
 	self.container.appendChild(button);
-};
+};};

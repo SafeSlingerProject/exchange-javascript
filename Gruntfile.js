@@ -11,7 +11,8 @@ module.exports = function(grunt) {
       
       dist: {
         src: ['src/javascript/module_begin.js', 'src/javascript/httpclient.js',
-        'src/javascript/safeslingerexchange.js','src/javascript/dh.js','src/javascript/module_end.js'],
+        'src/javascript/safeslingerexchange.js','src/javascript/dh.js','src/javascript/util/SafeSlingerUtil.js',
+        'src/javascript/module_end.js'],
         dest: 'build/safeslinger.js'
       },
       ui : {

@@ -1,7 +1,7 @@
 SafeSlinger.SafeSlingerExchange = function (address){
 	var self = this;
 	// networking object
-	self.version = 1 << 24 | 7 << 16;
+	self.version = 1 << 24 | 8 << 16;
 	self.address = address;
 	self.httpclient = null;
 	//predefined data structures
@@ -72,4 +72,9 @@ SafeSlinger.SafeSlingerExchange.prototype.beginExchange = function (data) {
 	console.log("Data Commitment: " + self.dataCommitment);
 
 	self.httpclient = new SafeSlinger.HTTPSConnection(self.address);
+};
+
+SafeSlinger.SafeSlingerExchange.prototype.assignUser = function() {
+	var self = this;
+	datagram = self.httpclient.assignUser(SafeSlinger.util.parseHexString(self.dataCommitment.toString()));
 };

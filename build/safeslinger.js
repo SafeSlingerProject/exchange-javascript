@@ -3,35 +3,68 @@ SafeSlinger 0.1.0
 */
 var SafeSlinger = (function (){
 	var SafeSlinger = {};
-SafeSlinger.HTTPSConnection = function (url, secret){
-	this.url = url;
-	this.secret = secret;
+	SafeSlinger.jspack = new JSPack();
+SafeSlinger.HTTPSConnection = function (address){
+	var self = this;
+	self.address = address;
+	self.connected = false;
+	self.connection = null;
+	self.version = 1 << 24 | 8 << 16;
+	if(self.address != ""){
+		self.connect();
+	}
+};
+
+SafeSlinger.HTTPSConnection.prototype.connect = function() {
+	var self = this;
+	var xhr = new XMLHttpRequest();
+	self.connection = xhr;
+	self.connected = true;
 };
 
 SafeSlinger.HTTPSConnection.prototype.doPost = function(name, packetdata, callback) {
 	var self = this;
-	var xhr = new XMLHttpRequest();
-	xhr.open("POST", self.url + name, true);
-	xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-	xhr.onload = function (e){
-		var response = xhr.response;
-		console.log(xhr);
-		if(xhr.status === 200){
+	console.log("Connecting to server" + self.address);
+	self.connection.open("POST", self.address + name, true);
+
+	self.connection.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+	self.connection.onload = function (e){
+		var response = self.connection.response;
+		console.log(self.connection);
+		if(self.connection.status === 200){
 			self.response = response;
-			console.log(response + xhr.status);
+			console.log("response: " + response + " status:"+ self.connection.status);
+			self.userID = (SafeSlinger.jspack.Unpack('!i', response, 4))[0];
+			console.log("Assigned ID: " + self.userID);
 			callback();
 		}else{
-			console.log("Network error: return code" + xhr.status + ", reason = " + xhr.statusText);
+			console.log("Network error: return code" + self.connection.status + ", reason = " 
+				+ self.connection.statusText);
 		}
 	};
-	xhr.send(self.secret);
+	self.connection.send(packetdata);
 };
 
-SafeSlinger.SafeSlingerExchange = function (){
+SafeSlinger.HTTPSConnection.prototype.assignUser = function(dataCommitment) {
+	var self = this;
+	if(!self.connected)
+		return null;
+	dataCommitment.unshift(0);
+	dataCommitment[0] = self.version;
+	console.log("version: " + self.version);
+	var pack = SafeSlinger.jspack.Pack('!i' + (dataCommitment.length-1) + 'B', dataCommitment);
+	console.log(pack);
+	self.doPost("/assignUser", pack, function () {
+		console.log("requested");
+	});
+
+};
+
+SafeSlinger.SafeSlingerExchange = function (address){
 	var self = this;
 	// networking object
-	self.version = 1 << 24 | 7 << 16;
-	self.address = null;
+	self.version = 1 << 24 | 8 << 16;
+	self.address = address;
 	self.httpclient = null;
 	//predefined data structures
 	self.matchNonce = null;
@@ -64,22 +97,48 @@ SafeSlinger.SafeSlingerExchange = function (){
 
 SafeSlinger.SafeSlingerExchange.prototype.beginExchange = function (data) {
 	var self = this;
-	self.matchNonce = new Uint32Array(1);
+	self.matchNonce = new Uint32Array(8);
+	self.joinedMatchNonce = "";
+	//console.log(self.matchNonce.join());
 	window.crypto.getRandomValues(self.matchNonce);
-	self.wrongNonce = new Uint32Array(1);
+	for(var i=0; i<8; i++){
+		//console.log(self.matchNonce[i]);
+		self.joinedMatchNonce += self.matchNonce[i].toString();
+	}
+	console.log("Match Nonce: " + self.joinedMatchNonce);
+	self.wrongNonce = new Uint32Array(8);
+	self.joinedWrongNonce = "";
 	window.crypto.getRandomValues(self.wrongNonce);
-
-	self.matchExtrahash = CryptoJS.SHA3(self.matchNonce[0].toString(), {outputLength: 256});
-	self.wrongHash = CryptoJS.SHA3(self.wrongNonce[0].toString(), {outputLength: 256});
+	for(var i=0; i<8; i++){
+		//console.log(self.matchNonce[i]);
+		self.joinedWrongNonce += self.wrongNonce[i].toString();
+	}
+	console.log("Wrong Nonce: " + self.joinedWrongNonce);
+	self.matchExtrahash = CryptoJS.SHA3(self.joinedMatchNonce, {outputLength: 256});
+	self.wrongHash = CryptoJS.SHA3(self.joinedWrongNonce, {outputLength: 256});
 	self.matchHash = CryptoJS.SHA3(self.matchExtrahash, {outputLength: 256});
-	console.log(self.matchHash.toString());
-	console.log(self.wrongHash.toString());
+	console.log("Match Hash: " + self.matchHash.toString());
+	console.log("Wrong Hash: " + self.wrongHash.toString());
 
-	self.encryptedData = CryptoJS.AES.encrypt(data, self.matchNonce[0].toString());
-	console.log(self.encryptedData.toString());
+	self.encryptedData = CryptoJS.AES.encrypt(data, self.joinedMatchNonce);
+	console.log("Encrypted Data: " + self.encryptedData.toString());
+
+	self.protocolCommitment = CryptoJS.SHA3(self.matchHash + self.wrongHash, {outputLength: 256});
+	console.log("Protocol Commitment: " + self.protocolCommitment);
 
 	var dh = new SafeSlinger.DiffieHellman();
 	dh.showParams();
+
+	self.dataCommitment = CryptoJS.SHA3(self.protocolCommitment
+		+ dh.publicKey + self.encryptedData, {outputLength: 256});
+	console.log("Data Commitment: " + self.dataCommitment);
+
+	self.httpclient = new SafeSlinger.HTTPSConnection(self.address);
+};
+
+SafeSlinger.SafeSlingerExchange.prototype.assignUser = function() {
+	var self = this;
+	datagram = self.httpclient.assignUser(SafeSlinger.util.parseHexString(self.dataCommitment.toString()));
 };
 SafeSlinger.DiffieHellman = function () {
 	var self = this;
@@ -108,5 +167,33 @@ SafeSlinger.DiffieHellman.prototype.showParams = function (){
 	console.log("Private Key: " + bigInt2str(self.privateKey,16));
 	console.log("Public Key: "  + bigInt2str(self.publicKey, 10));
 }
+SafeSlinger.util = {};
+
+SafeSlinger.util.parseHexString = function (str){
+    var result = [];
+    while (str.length >= 2) { 
+        result.push(parseInt(str.substring(0, 2), 16));
+
+        str = str.substring(2, str.length);
+    }
+
+    return result;
+};
+
+SafeSlinger.util.createHexString = function (arr) {
+    var result = "";
+    var z;
+
+    for (var i = 0; i < arr.length; i++) {
+        var str = arr[i].toString(16);
+
+        z = 2 - str.length + 1;
+        str = Array(z).join("0") + str;
+
+        result += str;
+    }
+
+    return result;
+};
 	return SafeSlinger;
 })();

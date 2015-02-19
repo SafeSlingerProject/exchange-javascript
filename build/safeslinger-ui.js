@@ -47,14 +47,8 @@ SafeSlingerUI.prototype.showServerSecretView = function() {
 		if(self.secret == null || self.secret == ""){
 			return false;
 		}
-		var con = new SafeSlinger.HTTPSConnection(url, self.secret);
-		self.connection = con;
-		self.connection.doPost("/assignUser", "data", function (){
-			// -- Adding just to test UI. Otherwise this condition should show error.
-			if(self.connection.response = "Request was formatted incorrectly."){
-				self.showGetNumView();
-			}
-		});
+		self.address = url;
+		self.showGetNumView();
 	}, false);
 	self.container.appendChild(button);
 };
@@ -80,9 +74,10 @@ SafeSlingerUI.prototype.showGetNumView = function() {
 	submit.id = 'submit-users';
 	submit.addEventListener("click", function (){
 		console.log(document.getElementById("num-users").value);
-		var ssExchange = new SafeSlinger.SafeSlingerExchange();
+		var ssExchange = new SafeSlinger.SafeSlingerExchange("https://slinger-dev.appspot.com");
 		self.ssExchange = ssExchange;
 		self.ssExchange.beginExchange(self.secret);
+		self.ssExchange.assignUser();
 		self.enterLowestNumber();
 	});
 	self.container.appendChild(numberDiv);

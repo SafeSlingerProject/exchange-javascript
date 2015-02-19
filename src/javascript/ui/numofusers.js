@@ -20,9 +20,10 @@ SafeSlingerUI.prototype.showGetNumView = function() {
 	submit.id = 'submit-users';
 	submit.addEventListener("click", function (){
 		console.log(document.getElementById("num-users").value);
-		var ssExchange = new SafeSlinger.SafeSlingerExchange();
+		var ssExchange = new SafeSlinger.SafeSlingerExchange("https://slinger-dev.appspot.com");
 		self.ssExchange = ssExchange;
 		self.ssExchange.beginExchange(self.secret);
+		self.ssExchange.assignUser();
 		self.enterLowestNumber();
 	});
 	self.container.appendChild(numberDiv);

@@ -3,6 +3,7 @@ SafeSlinger.HTTPSConnection = function (address){
 	self.address = address;
 	self.connected = false;
 	self.connection = null;
+	self.version = 1 << 24 | 8 << 16;
 	if(self.address != ""){
 		self.connect();
 	}
@@ -10,26 +11,45 @@ SafeSlinger.HTTPSConnection = function (address){
 
 SafeSlinger.HTTPSConnection.prototype.connect = function() {
 	var self = this;
-	console.log("Connecting to server" + self.address);
 	var xhr = new XMLHttpRequest();
-	xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+	self.connection = xhr;
+	self.connected = true;
 };
+
 SafeSlinger.HTTPSConnection.prototype.doPost = function(name, packetdata, callback) {
 	var self = this;
-	var xhr = new XMLHttpRequest();
-	xhr.open("POST", self.url + name, true);
+	console.log("Connecting to server" + self.address);
+	self.connection.open("POST", self.address + name, true);
 
-	xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-	xhr.onload = function (e){
-		var response = xhr.response;
-		console.log(xhr);
-		if(xhr.status === 200){
+	self.connection.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+	self.connection.onload = function (e){
+		var response = self.connection.response;
+		console.log(self.connection);
+		if(self.connection.status === 200){
 			self.response = response;
-			console.log(response + xhr.status);
+			console.log("response: " + response + " status:"+ self.connection.status);
+			self.userID = (SafeSlinger.jspack.Unpack('!i', response, 4))[0];
+			console.log("Assigned ID: " + self.userID);
 			callback();
 		}else{
-			console.log("Network error: return code" + xhr.status + ", reason = " + xhr.statusText);
+			console.log("Network error: return code" + self.connection.status + ", reason = " 
+				+ self.connection.statusText);
 		}
 	};
-	xhr.send(self.secret);
+	self.connection.send(packetdata);
+};
+
+SafeSlinger.HTTPSConnection.prototype.assignUser = function(dataCommitment) {
+	var self = this;
+	if(!self.connected)
+		return null;
+	dataCommitment.unshift(0);
+	dataCommitment[0] = self.version;
+	console.log("version: " + self.version);
+	var pack = SafeSlinger.jspack.Pack('!i' + (dataCommitment.length-1) + 'B', dataCommitment);
+	console.log(pack);
+	self.doPost("/assignUser", pack, function () {
+		console.log("requested");
+	});
+
 };

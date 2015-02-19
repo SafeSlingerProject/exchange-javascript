@@ -43,4 +43,4 @@ SafeSlingerUI.prototype.showServerSecretView = function() {
 		self.showGetNumView();
 	}, false);
 	self.container.appendChild(button);
-};};
+};

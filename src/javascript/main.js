@@ -4,4 +4,4 @@ var My = (function(){
 	ui.showServerSecretView()
 	//var con = new SafeSlinger.HTTPSConnection("https://slinger-dev.appspot.com","abcd");
 	//con.doPost;
-})();;
+})();

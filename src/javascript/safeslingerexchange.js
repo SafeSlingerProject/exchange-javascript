@@ -64,17 +64,43 @@ SafeSlinger.SafeSlingerExchange.prototype.beginExchange = function (data) {
 	self.protocolCommitment = CryptoJS.SHA3(self.matchHash + self.wrongHash, {outputLength: 256});
 	console.log("Protocol Commitment: " + self.protocolCommitment);
 
-	var dh = new SafeSlinger.DiffieHellman();
-	dh.showParams();
+	self.dh = new SafeSlinger.DiffieHellman();
+	self.dh.showParams();
+	self.dhpubkey = self.dh.publicKey;
 
 	self.dataCommitment = CryptoJS.SHA3(self.protocolCommitment
-		+ dh.publicKey + self.encryptedData, {outputLength: 256});
+		+ self.dhpubkey + self.encryptedData, {outputLength: 256});
 	console.log("Data Commitment: " + self.dataCommitment);
 
 	self.httpclient = new SafeSlinger.HTTPSConnection(self.address);
 };
 
-SafeSlinger.SafeSlingerExchange.prototype.assignUser = function() {
+SafeSlinger.SafeSlingerExchange.prototype.assignUserRequest = function(callback) {
 	var self = this;
-	datagram = self.httpclient.assignUser(SafeSlinger.util.parseHexString(self.dataCommitment.toString()));
+	self.httpclient.assignUser(self, SafeSlinger.util.parseHexString(self.dataCommitment.toString()), callback);
 };
+
+SafeSlinger.SafeSlingerExchange.prototype.assignUser = function (response) {
+	var self = this;
+	self.userID = (SafeSlinger.jspack.Unpack('!i', response, 4))[0];
+	self.dataCommitmentSet[self.userID] = self.dataCommitment;
+	self.protoCommitmentSet[self.userID] = self.protocolCommitment;
+	self.dhpubkeySet[self.userID] = self.dhpubkey;
+	self.receivedcipherSet[self.userID] = self.encryptedData;
+	console.log("Assigned Id: " + self.userID);
+	console.log(self.dataCommitmentSet[self.userID].toString());
+	console.log(self.protoCommitmentSet[self.userID].toString());
+	console.log(bigInt2str(self.dhpubkeySet[self.userID], 10));
+	console.log(self.receivedcipherSet[self.userID].toString());
+	return self.userID;
+}
+
+SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumberRequest = function (lowNum, callback){
+	var self = this;
+	self.httpclient.sendMinID(self.userID, lowNum, self.uidSet, self.dataCommitment, callback);
+}
+
+SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumber = function (response){
+	//var minVersion = SafeSlinger.jspack.Unpack('!i', )
+	console.log("done");  
+}

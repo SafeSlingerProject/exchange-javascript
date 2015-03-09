@@ -61,7 +61,7 @@ SafeSlingerUI.prototype.showGetNumView = function() {
 	var select = document.createElement("select");
 	select.id = "num-users";
 	var maxUsers = 10;
-	for(var i=0; i<maxUsers; i++){
+	for(var i=2; i<=maxUsers; i++){
 		var option = document.createElement("option");
 		option.value = i;
 		option.innerHTML = i;
@@ -73,23 +73,28 @@ SafeSlingerUI.prototype.showGetNumView = function() {
 	submit.type = 'submit';
 	submit.id = 'submit-users';
 	submit.addEventListener("click", function (){
-		console.log(document.getElementById("num-users").value);
+		//console.log(document.getElementById("num-users").value);
 		var ssExchange = new SafeSlinger.SafeSlingerExchange("https://slinger-dev.appspot.com");
 		self.ssExchange = ssExchange;
+		self.ssExchange.numUsers = document.getElementById("num-users").value;
 		self.ssExchange.beginExchange(self.secret);
-		self.ssExchange.assignUser();
-		self.enterLowestNumber();
+		self.ssExchange.assignUserRequest(function (response){
+			console.log(response);
+			var userID = self.ssExchange.assignUser(response);
+			self.enterLowestNumber(userID);
+		});
 	});
 	self.container.appendChild(numberDiv);
 	self.container.appendChild(submit);
 };
-SafeSlingerUI.prototype.enterLowestNumber = function() {
+SafeSlingerUI.prototype.enterLowestNumber = function(userID) {
 	var self = this;
 	self.container.innerHTML = "";
 	var lowestNumDiv = document.createElement("div");
 	lowestNumDiv.id = "lowest-num";
 
 	lowestNumDiv.insertAdjacentHTML("afterbegin", "Enter the lowest number: ");
+	lowestNumDiv.insertAdjacentHTML("afterbegin", "Assigned Id: " + userID);
 
 	var lowestNumInput = document.createElement("input");
 	lowestNumInput.type = "text";
@@ -100,8 +105,13 @@ SafeSlingerUI.prototype.enterLowestNumber = function() {
 	submit.type = 'submit';
 	submit.id = 'submit-lowest-num';
 	submit.addEventListener("click", function (){
-		console.log(document.getElementById("lowest-num-input").value);
-		self.showPhrases();
+		self.lowNum = document.getElementById("lowest-num-input").value;
+		console.log(self.lowNum);
+		self.ssExchange.selectLowestNumberRequest(self.lowNum, function (response) {
+			console.log(response);
+			var isData = self.ssExchange.selectLowestNumber(response);
+		});
+		//self.showPhrases();
 	});
 
 	self.container.appendChild(lowestNumDiv);

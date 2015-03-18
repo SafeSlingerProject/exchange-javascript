@@ -97,10 +97,18 @@ SafeSlinger.SafeSlingerExchange.prototype.assignUser = function (response) {
 
 SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumberRequest = function (lowNum, callback){
 	var self = this;
-	self.httpclient.sendMinID(self.userID, lowNum, self.uidSet, self.dataCommitment, callback);
+	self.uidSet.push(self.userID);
+	console.log(self.uidSet);
+	self.httpclient.sendMinID(self.userID, lowNum, self.uidSet, 
+		SafeSlinger.util.parseHexString(self.dataCommitment.toString()), callback);
 }
 
 SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumber = function (response){
-	//var minVersion = SafeSlinger.jspack.Unpack('!i', )
+	var minVersion = SafeSlinger.jspack.Unpack('!i', response, 4)[0];
+	console.log(minVersion);
+	var count = SafeSlinger.jspack.Unpack('!i', response, 8)[0];
+	console.log(count);
+	var delta_count = SafeSlinger.jspack.Unpack('!i', response, 12)[0];
+	console.log(delta_count);
 	console.log("done");  
 }

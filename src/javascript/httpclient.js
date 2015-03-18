@@ -46,7 +46,9 @@ SafeSlinger.HTTPSConnection.prototype.assignUser = function(ssExchange, dataComm
 	console.log("version: " + self.version);
 	var pack = SafeSlinger.jspack.Pack('!i' + (dataCommitment.length-1) + 'B', dataCommitment);
 	console.log(pack);
-	self.doPost("/assignUser", pack, callback);
+	var packBin = SafeSlinger.util.createBinString(pack);
+	console.log("PackLen: " + packBin.length);
+	self.doPost("/assignUser", packBin, callback);
 };
 
 SafeSlinger.HTTPSConnection.prototype.sendMinID = function(userID, minID, uidSet, dataCommitment, callback) {
@@ -54,9 +56,28 @@ SafeSlinger.HTTPSConnection.prototype.sendMinID = function(userID, minID, uidSet
 	if(!self.connected)
 		return null;
 	var num_item = 4 + uidSet.length;
-	var pack = SafeSlinger.jspack.Pack('!' + num_item + 'i', self.version, userID, minID, uidSet.length, uidSet);
-	pack += SafeSlinger.jspack.Pack('!' + dataCommitment.length + 'B', dataCommitment);
-	console.log("setMinID");
+	console.log("num");
+	console.log(num_item);
+	console.log(dataCommitment);
+	var meta = [];
+	meta.push(self.version);
+	meta.push(userID);
+	meta.push(Number(minID));
+	meta.push(uidSet.length);
+	meta = meta.concat(uidSet);
+	console.log("meta");
+	console.log(meta);
+	dataCommitment = meta.concat(dataCommitment);
+	console.log("dataCommitment");
+	console.log(dataCommitment);
+	//var pack = SafeSlinger.jspack.Pack('!' + dataCommitment.length + 'B', dataCommitment);
+	var pack = SafeSlinger.jspack.Pack('!' + num_item + 'i' + (dataCommitment.length-num_item) + 'B', dataCommitment);
+	//pack = meta;
+	console.log("pack");
 	console.log(pack);
-	self.doPost('/syncUsers', pack, callback); 
+	var packBin = SafeSlinger.util.createBinString(pack);
+	console.log("packBin");
+	console.log(packBin);
+	console.log("PackLen: " + packBin.length);
+	self.doPost('/syncUsers', packBin, callback); 
 }

@@ -52,7 +52,9 @@ SafeSlinger.HTTPSConnection.prototype.assignUser = function(ssExchange, dataComm
 	console.log("version: " + self.version);
 	var pack = SafeSlinger.jspack.Pack('!i' + (dataCommitment.length-1) + 'B', dataCommitment);
 	console.log(pack);
-	self.doPost("/assignUser", pack, callback);
+	var packBin = SafeSlinger.util.createBinString(pack);
+	console.log("PackLen: " + packBin.length);
+	self.doPost("/assignUser", packBin, callback);
 };
 
 SafeSlinger.HTTPSConnection.prototype.sendMinID = function(userID, minID, uidSet, dataCommitment, callback) {
@@ -60,11 +62,30 @@ SafeSlinger.HTTPSConnection.prototype.sendMinID = function(userID, minID, uidSet
 	if(!self.connected)
 		return null;
 	var num_item = 4 + uidSet.length;
-	var pack = SafeSlinger.jspack.Pack('!' + num_item + 'i', self.version, userID, minID, uidSet.length, uidSet);
-	pack += SafeSlinger.jspack.Pack('!' + dataCommitment.length + 'B', dataCommitment);
-	console.log("setMinID");
+	console.log("num");
+	console.log(num_item);
+	console.log(dataCommitment);
+	var meta = [];
+	meta.push(self.version);
+	meta.push(userID);
+	meta.push(Number(minID));
+	meta.push(uidSet.length);
+	meta = meta.concat(uidSet);
+	console.log("meta");
+	console.log(meta);
+	dataCommitment = meta.concat(dataCommitment);
+	console.log("dataCommitment");
+	console.log(dataCommitment);
+	//var pack = SafeSlinger.jspack.Pack('!' + dataCommitment.length + 'B', dataCommitment);
+	var pack = SafeSlinger.jspack.Pack('!' + num_item + 'i' + (dataCommitment.length-num_item) + 'B', dataCommitment);
+	//pack = meta;
+	console.log("pack");
 	console.log(pack);
-	self.doPost('/syncUsers', pack, callback); 
+	var packBin = SafeSlinger.util.createBinString(pack);
+	console.log("packBin");
+	console.log(packBin);
+	console.log("PackLen: " + packBin.length);
+	self.doPost('/syncUsers', packBin, callback); 
 }
 
 SafeSlinger.SafeSlingerExchange = function (address){
@@ -166,11 +187,19 @@ SafeSlinger.SafeSlingerExchange.prototype.assignUser = function (response) {
 
 SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumberRequest = function (lowNum, callback){
 	var self = this;
-	self.httpclient.sendMinID(self.userID, lowNum, self.uidSet, self.dataCommitment, callback);
+	self.uidSet.push(self.userID);
+	console.log(self.uidSet);
+	self.httpclient.sendMinID(self.userID, lowNum, self.uidSet, 
+		SafeSlinger.util.parseHexString(self.dataCommitment.toString()), callback);
 }
 
 SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumber = function (response){
-	//var minVersion = SafeSlinger.jspack.Unpack('!i', )
+	var minVersion = SafeSlinger.jspack.Unpack('!i', response, 4)[0];
+	console.log(minVersion);
+	var count = SafeSlinger.jspack.Unpack('!i', response, 8)[0];
+	console.log(count);
+	var delta_count = SafeSlinger.jspack.Unpack('!i', response, 12)[0];
+	console.log(delta_count);
 	console.log("done");  
 }
 SafeSlinger.DiffieHellman = function () {
@@ -227,6 +256,14 @@ SafeSlinger.util.createHexString = function (arr) {
     }
 
     return result;
+};
+
+SafeSlinger.util.createBinString = function (arr) {
+    var retStr = "";
+    for(var i=0;i<arr.length; i++){
+        retStr = retStr + String.fromCharCode(arr[i]);
+    }
+    return retStr;
 };
 	return SafeSlinger;
 })();

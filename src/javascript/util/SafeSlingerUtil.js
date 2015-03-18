@@ -26,3 +26,11 @@ SafeSlinger.util.createHexString = function (arr) {
 
     return result;
 };
+
+SafeSlinger.util.createBinString = function (arr) {
+    var retStr = "";
+    for(var i=0;i<arr.length; i++){
+        retStr = retStr + String.fromCharCode(arr[i]);
+    }
+    return retStr;
+};

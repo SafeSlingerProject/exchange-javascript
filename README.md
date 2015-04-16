@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/SafeSlingerProject/exchange-javascript.png?branch=master)](https://travis-ci.org/SafeSlingerProject/exchange-javascript)
+
 exchange-javascript
 ===================
 

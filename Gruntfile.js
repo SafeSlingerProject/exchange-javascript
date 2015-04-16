@@ -60,8 +60,9 @@ module.exports = function(grunt) {
   });
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-watch');
-  grunt.loadNpmTasks('grunt-contrib-jshint');
+  //grunt.loadNpmTasks('grunt-contrib-jshint');
 
   grunt.registerTask('default', ['build']);
-  grunt.registerTask('build', ['concat:dist', 'concat:ui', 'jshint:dist']);
+  //grunt.registerTask('build', ['concat:dist', 'concat:ui', 'jshint:dist']);
+  grunt.registerTask('build', ['concat:dist', 'concat:ui']);
 }

@@ -20,7 +20,7 @@ SafeSlingerUI.prototype.showGetNumView = function() {
 	submit.id = 'submit-users';
 	submit.addEventListener("click", function (){
 		//console.log(document.getElementById("num-users").value);
-		var ssExchange = new SafeSlinger.SafeSlingerExchange("https://slinger-dev.appspot.com");
+		var ssExchange = new SafeSlinger.SafeSlingerExchange("https://01060000t-dot-slinger-dev.appspot.com");
 		self.ssExchange = ssExchange;
 		self.ssExchange.numUsers = document.getElementById("num-users").value;
 		self.ssExchange.beginExchange(self.secret);

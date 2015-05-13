@@ -20,8 +20,10 @@ SafeSlinger.HTTPSConnection.prototype.doPost = function(name, packetdata, callba
 	var self = this;
 	console.log("Connecting to server: " + self.address);
 	self.connection.open("POST", self.address + name, true);
+	self.connection.responseType = "arraybuffer";
 
 	self.connection.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+	//self.connection.setRequestHeader("Content-Type","application/octet-stream");
 	self.connection.onload = function (e){
 		var response = self.connection.response;
 		console.log(self.connection);
@@ -37,18 +39,50 @@ SafeSlinger.HTTPSConnection.prototype.doPost = function(name, packetdata, callba
 	self.connection.send(packetdata);
 };
 
+SafeSlinger.HTTPSConnection.prototype.doPostAjax = function(name, packetdata, callback) {
+	console.log("JSON data");
+	console.log(packetdata.ver_client);
+	console.log(packetdata.commit_b64);
+	var self = this;
+	jQuery.ajax({
+		url: self.address + name,
+		type: "POST",
+		processData: false,
+		dataType: "json",
+		contentType: "text/plain",
+		data: JSON.stringify(packetdata),
+		crossDomain: true,
+		success : function(response){
+			console.log("success");
+			console.log(response);
+			callback(response);
+		},
+		error : function (response){
+			console.log("error");
+			console.log(response);
+		}
+	});
+};
+
 SafeSlinger.HTTPSConnection.prototype.assignUser = function(ssExchange, dataCommitment, callback) {
 	var self = this;
 	if(!self.connected)
 		return null;
-	dataCommitment.unshift(0);
-	dataCommitment[0] = self.version;
-	console.log("version: " + self.version);
-	var pack = SafeSlinger.jspack.Pack('!i' + (dataCommitment.length-1) + 'B', dataCommitment);
+
+	//packing the commitment
+	var pack = SafeSlinger.jspack.Pack('!' + (dataCommitment.length-1) + 'B', dataCommitment);
 	console.log(pack);
+
+	//creating binary string
 	var packBin = SafeSlinger.util.createBinString(pack);
 	console.log("PackLen: " + packBin.length);
-	self.doPost("/assignUser", packBin, callback);
+	console.log(packBin);
+	var dataObj = {
+		"ver_client" : String(self.version),
+		"commit_b64" : btoa(packBin)
+	}
+	//self.doPost("/assignUser", packBin, callback);
+	self.doPostAjax("/assignUser", dataObj, callback);
 };
 
 SafeSlinger.HTTPSConnection.prototype.sendMinID = function(userID, minID, uidSet, dataCommitment, callback) {

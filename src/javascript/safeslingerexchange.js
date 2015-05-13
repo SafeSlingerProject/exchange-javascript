@@ -82,7 +82,8 @@ SafeSlinger.SafeSlingerExchange.prototype.assignUserRequest = function(callback)
 
 SafeSlinger.SafeSlingerExchange.prototype.assignUser = function (response) {
 	var self = this;
-	self.userID = (SafeSlinger.jspack.Unpack('!i', response, 4))[0];
+
+	self.userID = response.usrid;
 	self.dataCommitmentSet[self.userID] = self.dataCommitment;
 	self.protoCommitmentSet[self.userID] = self.protocolCommitment;
 	self.dhpubkeySet[self.userID] = self.dhpubkey;
@@ -97,6 +98,8 @@ SafeSlinger.SafeSlingerExchange.prototype.assignUser = function (response) {
 
 SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumberRequest = function (lowNum, callback){
 	var self = this;
+	self.lowNum = lowNum;
+	self.numUsers_Recv = 1;
 	self.uidSet.push(self.userID);
 	console.log(self.uidSet);
 	self.httpclient.sendMinID(self.userID, lowNum, self.uidSet, 
@@ -104,11 +107,35 @@ SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumberRequest = function (
 }
 
 SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumber = function (response){
+	var self = this;
 	var minVersion = SafeSlinger.jspack.Unpack('!i', response, 4)[0];
 	console.log(minVersion);
 	var count = SafeSlinger.jspack.Unpack('!i', response, 8)[0];
-	console.log(count);
+	console.log("count " + count);
 	var delta_count = SafeSlinger.jspack.Unpack('!i', response, 12)[0];
-	console.log(delta_count);
+	console.log("deltacount " + delta_count);
+	if(self.numUsers_Recv < self.numUsers){
+		if(delta_count > 0){
+			self.offset = 16;
+			for(var i = 0 ;i < delta_count; i++){
+				var uid = SafeSlinger.jspack.Unpack('!i', response, self.offset)[0];
+				self.uidSet.push(uid);
+				self.offset += 4;
+				var commitLen = SafeSlinger.jspack.Unpack('!i', response, self.offset)[0];
+				self.offset += 4;
+				self.dataCommitmentSet[uid] = SafeSlinger.jspack.Unpack(commitLen + "B", response,self.offset);
+				self.offset += commitLen;
+				self.numUsers_Recv += 1;
+				console.log("Received " + self.numUsers_Recv + "/" + self.numUsers + " Items");
+			}
+		}
+	}
+	
+	if(self.numUsers_Recv < self.numUsers){
+		self.httpclient.sendMinID(self.userID, self.lowNum, self.uidSet, 
+		SafeSlinger.util.parseHexString(self.dataCommitment.toString()), function (){
+			self.selectLowestNumber(response);
+		});
+	}
 	console.log("done");  
 }

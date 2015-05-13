@@ -14,8 +14,8 @@ SafeSlingerUI.prototype.showServerSecretView = function() {
 	var serverInput = document.createElement("input");
 	serverInput.type = "text";
 	serverInput.id = "server-input";
-	serverInput.innerHTML = "https://slinger-dev.appspot.com"
-	serverInput.value = "https://slinger-dev.appspot.com";
+	serverInput.innerHTML = "https://01060000t-dot-slinger-dev.appspot.com"
+	serverInput.value = "https://01060000t-dot-slinger-dev.appspot.com";
 	serverDiv.insertAdjacentHTML("afterbegin", "Server:");
 	serverDiv.appendChild(serverInput);
 	self.container.appendChild(serverDiv);
@@ -38,7 +38,7 @@ SafeSlingerUI.prototype.showServerSecretView = function() {
 	button.addEventListener('click',function (){
 		var url = document.getElementById("server-input").value;
 		if(!url){
-			url = "https://slinger-dev.appspot.com";
+			url = "https://01060000t-dot-slinger-dev.appspot.com";
 		}
 		if(!SafeSlingerUI.util.validateLink(url)){
 			return false;
@@ -74,7 +74,7 @@ SafeSlingerUI.prototype.showGetNumView = function() {
 	submit.id = 'submit-users';
 	submit.addEventListener("click", function (){
 		//console.log(document.getElementById("num-users").value);
-		var ssExchange = new SafeSlinger.SafeSlingerExchange("https://slinger-dev.appspot.com");
+		var ssExchange = new SafeSlinger.SafeSlingerExchange("https://01060000t-dot-slinger-dev.appspot.com");
 		self.ssExchange = ssExchange;
 		self.ssExchange.numUsers = document.getElementById("num-users").value;
 		self.ssExchange.beginExchange(self.secret);

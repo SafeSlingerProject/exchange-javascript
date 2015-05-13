@@ -26,8 +26,10 @@ SafeSlinger.HTTPSConnection.prototype.doPost = function(name, packetdata, callba
 	var self = this;
 	console.log("Connecting to server: " + self.address);
 	self.connection.open("POST", self.address + name, true);
+	self.connection.responseType = "arraybuffer";
 
 	self.connection.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+	//self.connection.setRequestHeader("Content-Type","application/octet-stream");
 	self.connection.onload = function (e){
 		var response = self.connection.response;
 		console.log(self.connection);
@@ -43,18 +45,50 @@ SafeSlinger.HTTPSConnection.prototype.doPost = function(name, packetdata, callba
 	self.connection.send(packetdata);
 };
 
+SafeSlinger.HTTPSConnection.prototype.doPostAjax = function(name, packetdata, callback) {
+	console.log("JSON data");
+	console.log(packetdata.ver_client);
+	console.log(packetdata.commit_b64);
+	var self = this;
+	jQuery.ajax({
+		url: self.address + name,
+		type: "POST",
+		processData: false,
+		dataType: "json",
+		contentType: "text/plain",
+		data: JSON.stringify(packetdata),
+		crossDomain: true,
+		success : function(response){
+			console.log("success");
+			console.log(response);
+			callback(response);
+		},
+		error : function (response){
+			console.log("error");
+			console.log(response);
+		}
+	});
+};
+
 SafeSlinger.HTTPSConnection.prototype.assignUser = function(ssExchange, dataCommitment, callback) {
 	var self = this;
 	if(!self.connected)
 		return null;
-	dataCommitment.unshift(0);
-	dataCommitment[0] = self.version;
-	console.log("version: " + self.version);
-	var pack = SafeSlinger.jspack.Pack('!i' + (dataCommitment.length-1) + 'B', dataCommitment);
+
+	//packing the commitment
+	var pack = SafeSlinger.jspack.Pack('!' + (dataCommitment.length-1) + 'B', dataCommitment);
 	console.log(pack);
+
+	//creating binary string
 	var packBin = SafeSlinger.util.createBinString(pack);
 	console.log("PackLen: " + packBin.length);
-	self.doPost("/assignUser", packBin, callback);
+	console.log(packBin);
+	var dataObj = {
+		"ver_client" : String(self.version),
+		"commit_b64" : btoa(packBin)
+	}
+	//self.doPost("/assignUser", packBin, callback);
+	self.doPostAjax("/assignUser", dataObj, callback);
 };
 
 SafeSlinger.HTTPSConnection.prototype.sendMinID = function(userID, minID, uidSet, dataCommitment, callback) {
@@ -172,7 +206,8 @@ SafeSlinger.SafeSlingerExchange.prototype.assignUserRequest = function(callback)
 
 SafeSlinger.SafeSlingerExchange.prototype.assignUser = function (response) {
 	var self = this;
-	self.userID = (SafeSlinger.jspack.Unpack('!i', response, 4))[0];
+
+	self.userID = response.usrid;
 	self.dataCommitmentSet[self.userID] = self.dataCommitment;
 	self.protoCommitmentSet[self.userID] = self.protocolCommitment;
 	self.dhpubkeySet[self.userID] = self.dhpubkey;
@@ -187,6 +222,8 @@ SafeSlinger.SafeSlingerExchange.prototype.assignUser = function (response) {
 
 SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumberRequest = function (lowNum, callback){
 	var self = this;
+	self.lowNum = lowNum;
+	self.numUsers_Recv = 1;
 	self.uidSet.push(self.userID);
 	console.log(self.uidSet);
 	self.httpclient.sendMinID(self.userID, lowNum, self.uidSet, 
@@ -194,12 +231,36 @@ SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumberRequest = function (
 }
 
 SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumber = function (response){
+	var self = this;
 	var minVersion = SafeSlinger.jspack.Unpack('!i', response, 4)[0];
 	console.log(minVersion);
 	var count = SafeSlinger.jspack.Unpack('!i', response, 8)[0];
-	console.log(count);
+	console.log("count " + count);
 	var delta_count = SafeSlinger.jspack.Unpack('!i', response, 12)[0];
-	console.log(delta_count);
+	console.log("deltacount " + delta_count);
+	if(self.numUsers_Recv < self.numUsers){
+		if(delta_count > 0){
+			self.offset = 16;
+			for(var i = 0 ;i < delta_count; i++){
+				var uid = SafeSlinger.jspack.Unpack('!i', response, self.offset)[0];
+				self.uidSet.push(uid);
+				self.offset += 4;
+				var commitLen = SafeSlinger.jspack.Unpack('!i', response, self.offset)[0];
+				self.offset += 4;
+				self.dataCommitmentSet[uid] = SafeSlinger.jspack.Unpack(commitLen + "B", response,self.offset);
+				self.offset += commitLen;
+				self.numUsers_Recv += 1;
+				console.log("Received " + self.numUsers_Recv + "/" + self.numUsers + " Items");
+			}
+		}
+	}
+	
+	if(self.numUsers_Recv < self.numUsers){
+		self.httpclient.sendMinID(self.userID, self.lowNum, self.uidSet, 
+		SafeSlinger.util.parseHexString(self.dataCommitment.toString()), function (){
+			self.selectLowestNumber(response);
+		});
+	}
 	console.log("done");  
 }
 SafeSlinger.DiffieHellman = function () {

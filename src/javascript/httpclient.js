@@ -89,23 +89,11 @@ SafeSlinger.HTTPSConnection.prototype.sendMinID = function(userID, minID, uidSet
 	var self = this;
 	if(!self.connected)
 		return null;
-	var num_item = 4 + uidSet.length;
-	console.log("num");
-	console.log(num_item);
-	console.log(dataCommitment);
-	var meta = [];
-	meta.push(self.version);
-	meta.push(userID);
-	meta.push(Number(minID));
-	meta.push(uidSet.length);
-	meta = meta.concat(uidSet);
-	console.log("meta");
-	console.log(meta);
-	dataCommitment = meta.concat(dataCommitment);
+
 	console.log("dataCommitment");
 	console.log(dataCommitment);
-	//var pack = SafeSlinger.jspack.Pack('!' + dataCommitment.length + 'B', dataCommitment);
-	var pack = SafeSlinger.jspack.Pack('!' + num_item + 'i' + (dataCommitment.length-num_item) + 'B', dataCommitment);
+	var pack = SafeSlinger.jspack.Pack('!' + dataCommitment.length + 'B', dataCommitment);
+	//var pack = SafeSlinger.jspack.Pack('!' + num_item + 'i' + (dataCommitment.length-num_item) + 'B', dataCommitment);
 	//pack = meta;
 	console.log("pack");
 	console.log(pack);
@@ -113,5 +101,14 @@ SafeSlinger.HTTPSConnection.prototype.sendMinID = function(userID, minID, uidSet
 	console.log("packBin");
 	console.log(packBin);
 	console.log("PackLen: " + packBin.length);
-	self.doPost('/syncUsers', packBin, callback); 
+
+	var dataObj = {
+		"ver_client" : String(self.version),
+		"usrid" : String(userID),
+		"usridlink" : String(minID),
+		"usrids" : uidSet,
+		"commit_b64" : btoa(packBin)
+	}
+
+	self.doPostAjax('/syncUsers', dataObj, callback); 
 }

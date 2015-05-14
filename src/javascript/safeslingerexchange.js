@@ -108,23 +108,32 @@ SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumberRequest = function (
 
 SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumber = function (response){
 	var self = this;
-	var minVersion = SafeSlinger.jspack.Unpack('!i', response, 4)[0];
-	console.log(minVersion);
-	var count = SafeSlinger.jspack.Unpack('!i', response, 8)[0];
-	console.log("count " + count);
-	var delta_count = SafeSlinger.jspack.Unpack('!i', response, 12)[0];
-	console.log("deltacount " + delta_count);
+	// var minVersion = SafeSlinger.jspack.Unpack('!i', response, 4)[0];
+	// console.log(minVersion);
+	// var count = SafeSlinger.jspack.Unpack('!i', response, 8)[0];
+	// console.log("count " + count);
+	// var delta_count = SafeSlinger.jspack.Unpack('!i', response, 12)[0];
+	// console.log("deltacount " + delta_count);
+	console.log("selectlowNum");
+	console.log(response);
+
+	var server = response.ver_server;
+	var low_client = response.ver_low_client;
+	var total = response.com_total;
+	var deltas = response.com_deltas;
+	console.log(deltas);
+	var delta_count = deltas.length;
+
+
+
 	if(self.numUsers_Recv < self.numUsers){
 		if(delta_count > 0){
 			self.offset = 16;
 			for(var i = 0 ;i < delta_count; i++){
-				var uid = SafeSlinger.jspack.Unpack('!i', response, self.offset)[0];
+				var uid = deltas[i].usrid;
 				self.uidSet.push(uid);
-				self.offset += 4;
-				var commitLen = SafeSlinger.jspack.Unpack('!i', response, self.offset)[0];
-				self.offset += 4;
-				self.dataCommitmentSet[uid] = SafeSlinger.jspack.Unpack(commitLen + "B", response,self.offset);
-				self.offset += commitLen;
+				var commitment = deltas[i].commit_b64;
+				self.dataCommitmentSet[uid] = commitment;
 				self.numUsers_Recv += 1;
 				console.log("Received " + self.numUsers_Recv + "/" + self.numUsers + " Items");
 			}
@@ -133,9 +142,12 @@ SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumber = function (respons
 	
 	if(self.numUsers_Recv < self.numUsers){
 		self.httpclient.sendMinID(self.userID, self.lowNum, self.uidSet, 
-		SafeSlinger.util.parseHexString(self.dataCommitment.toString()), function (){
+		SafeSlinger.util.parseHexString(self.dataCommitment.toString()), function (response){
 			self.selectLowestNumber(response);
 		});
+	}else{
+		console.log("All data is recieved");
+		console.log(self.dataCommitmentSet);
 	}
 	console.log("done");  
 }

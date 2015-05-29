@@ -67,6 +67,7 @@ SafeSlinger.SafeSlingerExchange.prototype.beginExchange = function (data) {
 	self.dh = new SafeSlinger.DiffieHellman();
 	self.dh.showParams();
 	self.dhpubkey = self.dh.publicKey;
+	self.dhkeyLen = self.dhpubkey.length;
 
 	self.dataCommitment = CryptoJS.SHA3(self.protocolCommitment
 		+ self.dhpubkey + self.encryptedData, {outputLength: 256});
@@ -142,12 +143,77 @@ SafeSlinger.SafeSlingerExchange.prototype.selectLowestNumber = function (respons
 	
 	if(self.numUsers_Recv < self.numUsers){
 		self.httpclient.sendMinID(self.userID, self.lowNum, self.uidSet, 
-		SafeSlinger.util.parseHexString(self.dataCommitment.toString()), function (response){
-			self.selectLowestNumber(response);
-		});
+			SafeSlinger.util.parseHexString(self.dataCommitment.toString()), function (response){
+				self.selectLowestNumber(response);
+			});
 	}else{
 		console.log("All data is recieved");
 		console.log(self.dataCommitmentSet);
+		self.syncDataRequest(function (response){
+			self.syncData(response);
+		});
 	}
 	console.log("done");  
+}
+
+SafeSlinger.SafeSlingerExchange.prototype.syncDataRequest = function (callback){
+	var self = this;
+	self.numUsers_Recv = 1;
+	self.uidSet = [];
+	self.uidSet.push(self.userID);
+	var protoCommit = SafeSlinger.util.parseHexString(self.protocolCommitment.toString());
+	var dhpubkey = SafeSlinger.util.parseHexString(bigInt2str(self.dhpubkey, 16));
+	var encryptedData = SafeSlinger.util.parseHexString(self.encryptedData.ciphertext.toString());
+
+
+	self.httpclient.syncData(self.userID, protoCommit, 
+		dhpubkey, self.uidSet, encryptedData, callback);
+}
+
+SafeSlinger.SafeSlingerExchange.prototype.syncData = function (response) {
+	var self = this;
+	console.log("********************** Safeslinger syncData ************");
+	console.log(response);
+
+	var server = response.ver_server;
+	var data_total = response.data_total;
+	var data_deltas = response.data_deltas;
+	var delta_counts = data_deltas.length;
+
+	console.log("data_total --> " + data_total);
+	console.log("data_deltas --> " + data_deltas);
+	console.log("data_counts --> " + delta_counts);
+
+	 if(self.numUsers_Recv < self.numUsers){
+	 	if(delta_counts > 0){
+	 		for(var i = 0; i < delta_counts; i++){
+	 			var usrid = data_deltas[i].usrid;
+	 			var data = data_deltas[i].data_b64;
+	 			console.log("User id -->" + usrid);
+	 			console.log("data --> " + data);
+
+	 			// TODO: extract and add data to respective arrays.
+	 			self.uidSet.push(usrid);
+	 			self.numUsers_Recv += 1;
+	 			console.log("Received " + self.numUsers_Recv + "/" + self.numUsers + " Commitments");
+
+	 		}
+	 	}
+	 }
+
+	 if(self.numUsers_Recv < self.numUsers){
+	 	var protoCommit = SafeSlinger.util.parseHexString(self.protocolCommitment.toString());
+		var dhpubkey = SafeSlinger.util.parseHexString(bigInt2str(self.dhpubkey, 16));
+		var encryptedData = SafeSlinger.util.parseHexString(self.encryptedData.ciphertext.toString());
+
+	 	self.httpclient.syncData(self.userID, protoCommit, 
+	 		dhpubkey, self.uidSet, encryptedData, function (response){
+			self.syncData(response);
+		});
+	 }else{
+	 	console.log("response from sync data");
+	 	console.log(response);
+	 	// TODO: call Compute3Wordphrases
+	 }
+	
 }

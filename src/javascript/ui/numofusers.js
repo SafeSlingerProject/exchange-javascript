@@ -27,7 +27,7 @@ SafeSlingerUI.prototype.showGetNumView = function() {
 		self.ssExchange.assignUserRequest(function (response){
 			console.log(response);
 			var userID = self.ssExchange.assignUser(response);
-			self.enterLowestNumber(userID);
+			self.showGroupingNumber(userID);
 		});
 	});
 	self.container.appendChild(numberDiv);

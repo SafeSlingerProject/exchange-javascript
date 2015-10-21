@@ -26,6 +26,7 @@ SafeSlingerUI.prototype.showServerSecretView = function() {
 	var secretInput = document.createElement("input");
 	secretInput.type = "text";
 	secretInput.id = "secret-input";
+	secretInput.value = "js-demo";
 	secretDiv.insertAdjacentHTML("afterbegin", "Secret:");
 	secretDiv.appendChild(secretInput);
 	self.container.appendChild(secretDiv);
@@ -81,20 +82,20 @@ SafeSlingerUI.prototype.showGetNumView = function() {
 		self.ssExchange.assignUserRequest(function (response){
 			console.log(response);
 			var userID = self.ssExchange.assignUser(response);
-			self.enterLowestNumber(userID);
+			self.showGroupingNumber(userID);
 		});
 	});
 	self.container.appendChild(numberDiv);
 	self.container.appendChild(submit);
 };
-SafeSlingerUI.prototype.enterLowestNumber = function(userID) {
+SafeSlingerUI.prototype.showGroupingNumber = function(userID) {
 	var self = this;
 	self.container.innerHTML = "";
 	var lowestNumDiv = document.createElement("div");
 	lowestNumDiv.id = "lowest-num";
 
 	lowestNumDiv.insertAdjacentHTML("afterbegin", "Enter the lowest number: ");
-	lowestNumDiv.insertAdjacentHTML("afterbegin", "Assigned Id: " + userID);
+	lowestNumDiv.insertAdjacentHTML("afterbegin", "Assigned Id: " + userID + " ");
 
 	var lowestNumInput = document.createElement("input");
 	lowestNumInput.type = "text";
@@ -107,58 +108,122 @@ SafeSlingerUI.prototype.enterLowestNumber = function(userID) {
 	submit.addEventListener("click", function (){
 		self.lowNum = document.getElementById("lowest-num-input").value;
 		console.log(self.lowNum);
-		self.ssExchange.selectLowestNumberRequest(self.lowNum, function (response) {
+		self.ssExchange.syncUsersRequest(self.lowNum, function (response) {
 			console.log(response);
-			var isData = self.ssExchange.selectLowestNumber(response);
+			var isData = self.ssExchange.syncUsers(response);
+			self.progressDataRequest();
 		});
-		//self.showPhrases();
 	});
 
 	self.container.appendChild(lowestNumDiv);
 	self.container.appendChild(submit);
 };
-SafeSlingerUI.prototype.showPhrases = function() {
+
+SafeSlingerUI.prototype.progressDataRequest = function (){
 	var self = this;
+	self.progressData(); 					
+}
+
+SafeSlingerUI.prototype.progressData = function (){
+	var self = this;
+	if(!self.ssExchange.isDataComplete()){
+		setTimeout(function() { 
+			self.progressData(); 					
+		}, 1000);
+	}else{
+		var position = self.ssExchange.getPosition();	
+		var hash = self.ssExchange.getHash24Bits();
+		var decoy1 = self.ssExchange.getDecoy24Bits1();
+		var decoy2 = self.ssExchange.getDecoy24Bits2();	
+		self.showPhrases(position, hash, decoy1, decoy2);
+	}
+}
+SafeSlingerUI.prototype.showPhrases = function(position, hash, decoy1, decoy2) {
+	var self = this;
+	var selected = -1;
 	self.container.innerHTML = "";
 	var phraseDiv = document.createElement("div");
+	
+	console.log("position --> " + position);
+	console.log("hash --> " + hash);
+	console.log("decoy1 --> " + decoy1);
+	console.log("decoy2 --> " + decoy2);
+
+	var hashes = [];	
+	hashes[position-1] = SafeSlinger.util.getNumberPhrase(hash);
+	switch (position-1) {
+	case 0:
+		hashes[1] = SafeSlinger.util.getNumberPhrase(decoy1);
+		hashes[2] = SafeSlinger.util.getNumberPhrase(decoy2);
+		break;
+	case 1:
+		hashes[0] = SafeSlinger.util.getNumberPhrase(decoy1);
+		hashes[2] = SafeSlinger.util.getNumberPhrase(decoy2);
+		break;
+	case 2:
+		hashes[0] = SafeSlinger.util.getNumberPhrase(decoy1);
+		hashes[1] = SafeSlinger.util.getNumberPhrase(decoy2);
+		break;
+	}
+	
 	var input1 = document.createElement("input");
 	input1.type = "radio";
 	input1.name = "phrase";
 	input1.id = "first";
-	input1.value = "Cat Dog Mad";
+	input1.value = hashes[0];
 	var label1 = document.createElement("label");
 	label1.for = "first";
-	label1.innerHTML = "Cat Dog Mad";
-
+	label1.innerHTML = hashes[0];
 
 	var input2 = document.createElement("input");
 	input2.type = "radio";
 	input2.name = "phrase";
 	input2.id = "second";
-	input2.value = "Go Goa Gone";
+	input2.value = hashes[1];
 	var label2 = document.createElement("label");
 	label2.for = "second";
-	label2.innerHTML = "Go Goa Gone";
+	label2.innerHTML = hashes[1];
 
 	var input3 = document.createElement("input");
 	input3.type = "radio";
 	input3.name = "phrase";
 	input3.id = "third";
-	input3.value = "Hi Hello Bye";
+	input3.value = hashes[2];
 	var label3 = document.createElement("label");
 	label3.for = "third";
-	label3.innerHTML = "Hi Hello Bye";
+	label3.innerHTML = hashes[2];
 
 	var noMatch = document.createElement("input");
 	noMatch.type = "submit";
 	noMatch.id = "no-match";
 	noMatch.value = "No Match";
+	noMatch.addEventListener("click", function (){
+		self.ssExchange.syncSignaturesRequest(selected, function (response) {
+			console.log(response);
+			var isMatch = self.ssExchange.syncSignatures(response);
+			self.progressMatchRequest();
+		});
+	});
 
 	var next = document.createElement("input");
 	next.type = "submit";
 	next.id = "next";
 	next.value = "Next";
-
+	next.addEventListener("click", function (){
+		if (document.getElementById("first").checked) {
+			selected = 1;
+		} else if (document.getElementById("second").checked) {
+			selected = 2;			
+		} else if (document.getElementById("third").checked) {
+			selected = 3;			
+		}
+		self.ssExchange.syncSignaturesRequest(selected, function (response) {
+			console.log(response);
+			var isMatch = self.ssExchange.syncSignatures(response);
+			self.progressMatchRequest();
+		});
+	});
+	
 	var br = document.createElement("br");
 	phraseDiv.appendChild(input1);
 	phraseDiv.appendChild(label1);
@@ -171,6 +236,45 @@ SafeSlingerUI.prototype.showPhrases = function() {
 	phraseDiv.appendChild(next);
 
 	self.container.appendChild(phraseDiv);
+};
+
+SafeSlingerUI.prototype.progressMatchRequest = function (){
+	var self = this;
+	self.progressMatch(); 					
+}
+
+SafeSlingerUI.prototype.progressMatch = function (){
+	var self = this;
+	if(!self.ssExchange.isMatchComplete()){
+		setTimeout(function() { 
+			self.progressMatch(); 					
+		}, 1000);
+	}else{
+		var dataSet = self.ssExchange.getDataSet();	
+		self.showResults(dataSet);
+	}
+}
+
+SafeSlingerUI.prototype.showResults = function(plaintextSet) {
+	var self = this;
+	self.container.innerHTML = "";
+	var resultDiv = document.createElement("div");
+	resultDiv.id = "plain-set";
+
+	resultDiv.insertAdjacentHTML("afterbegin", "Result: " + plaintextSet);
+
+	self.container.appendChild(resultDiv);
+};
+
+SafeSlingerUI.prototype.showError = function(msg) {
+	var self = this;
+	self.container.innerHTML = "";
+	var resultDiv = document.createElement("div");
+	resultDiv.id = "error";
+
+	resultDiv.insertAdjacentHTML("afterbegin", "Error: " + msg);
+
+	self.container.appendChild(resultDiv);
 };
 SafeSlingerUI.util = {};
 

@@ -68,9 +68,10 @@ SafeSlinger.HTTPSConnection.prototype.assignUser = function(ssExchange, dataComm
 	var self = this;
 	if(!self.connected)
 		return null;
+	console.log("************** HTTP assignUser *******************");
 
 	//packing the commitment
-	var pack = SafeSlinger.jspack.Pack('!' + (dataCommitment.length-1) + 'B', dataCommitment);
+	var pack = SafeSlinger.jspack.Pack('!' + dataCommitment.length + 'B', dataCommitment);
 	console.log(pack);
 
 	//creating binary string
@@ -85,11 +86,11 @@ SafeSlinger.HTTPSConnection.prototype.assignUser = function(ssExchange, dataComm
 	self.doPostAjax("/assignUser", dataObj, callback);
 };
 
-SafeSlinger.HTTPSConnection.prototype.sendMinID = function(userID, minID, uidSet, dataCommitment, callback) {
+SafeSlinger.HTTPSConnection.prototype.syncUsers = function(userID, minID, uidSet, dataCommitment, callback) {
 	var self = this;
 	if(!self.connected)
 		return null;
-	console.log("************** Send Min Id *******************");
+	console.log("************** HTTP syncUsers *******************");
 	console.log("dataCommitment");
 	console.log(dataCommitment);
 	var pack = SafeSlinger.jspack.Pack('!' + dataCommitment.length + 'B', dataCommitment);
@@ -117,7 +118,7 @@ SafeSlinger.HTTPSConnection.prototype.syncData = function(userID, protocolCommit
 	var self = this;
 	if(!self.connected)
 		return null;
-	console.log("************** HTTP SyncData *******************");
+	console.log("************** HTTP syncData *******************");
 	//var commit = protocolCommitment + dhpubkey + encryptedData;
 	var commit = protocolCommitment.concat(dhpubkey).concat(encryptedData);
 	console.log("commit");
@@ -140,3 +141,79 @@ SafeSlinger.HTTPSConnection.prototype.syncData = function(userID, protocolCommit
 
 	self.doPostAjax('/syncData', dataObj, callback);
 }
+
+SafeSlinger.HTTPSConnection.prototype.syncSignatures = function(userID, uidSet, sig, callback) {
+	var self = this;
+	if(!self.connected)
+		return null;
+	console.log("************** HTTP syncSignatures *******************");
+	console.log("sig");
+	console.log(sig);
+	var pack = SafeSlinger.jspack.Pack('!' + sig.length + 'B', sig);
+	console.log("pack");
+	console.log(pack);
+	var packBin = SafeSlinger.util.createBinString(pack);
+	console.log("packBin");
+	console.log(packBin);
+	console.log("PackLen: " + packBin.length);
+
+	var dataObj = {
+		"ver_client" : String(self.version),
+		"usrid" : String(userID),
+		"usrids" : uidSet,
+		"signature_b64" : btoa(packBin)
+	}
+
+	self.doPostAjax('/syncSignatures', dataObj, callback);
+}
+
+SafeSlinger.HTTPSConnection.prototype.syncKeyNodes = function(userID, usridpost, keynode, callback) {
+	var self = this;
+	if(!self.connected)
+		return null;
+	console.log("************** HTTP syncKeyNodes *******************");
+	console.log("keynode");
+	console.log(keynode);
+	var pack = SafeSlinger.jspack.Pack('!' + keynode.length + 'B', keynode);
+	console.log("pack");
+	console.log(pack);
+	var packBin = SafeSlinger.util.createBinString(pack);
+	console.log("packBin");
+	console.log(packBin);
+	console.log("PackLen: " + packBin.length);
+
+	var dataObj = {
+		"ver_client" : String(self.version),
+		"usrid" : String(userID),
+		"usridpost" : String(usridpost),
+		"keynode_b64" : btoa(packBin)
+	}
+
+	self.doPostAjax('/syncKeyNodes', dataObj, callback);
+}
+
+SafeSlinger.HTTPSConnection.prototype.syncMatch = function(userID, uidSet, matchNonce, callback) {
+	var self = this;
+	if(!self.connected)
+		return null;
+	console.log("************** HTTP syncMatch *******************");
+	console.log("matchNonce");
+	console.log(matchNonce);
+	var pack = SafeSlinger.jspack.Pack('!' + matchNonce.length + 'B', matchNonce);
+	console.log("pack");
+	console.log(pack);
+	var packBin = SafeSlinger.util.createBinString(pack);
+	console.log("packBin");
+	console.log(packBin);
+	console.log("PackLen: " + packBin.length);
+
+	var dataObj = {
+		"ver_client" : String(self.version),
+		"usrid" : String(userID),
+		"usrids" : uidSet,
+		"matchnonce_b64" : btoa(packBin)
+	}
+
+	self.doPostAjax('/syncMatch', dataObj, callback);
+}
+

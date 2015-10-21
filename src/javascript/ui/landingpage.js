@@ -18,6 +18,7 @@ SafeSlingerUI.prototype.showServerSecretView = function() {
 	var secretInput = document.createElement("input");
 	secretInput.type = "text";
 	secretInput.id = "secret-input";
+	secretInput.value = "js-demo";
 	secretDiv.insertAdjacentHTML("afterbegin", "Secret:");
 	secretDiv.appendChild(secretInput);
 	self.container.appendChild(secretDiv);

@@ -43,4 +43,12 @@ SafeSlingerUI.util.validateLink = function (link) {
 
 SafeSlingerUI.util.isNum = function (number){
 	return !isNaN(number);
-}
+};
+
+SafeSlingerUI.util.showError = function (self, msg){
+	self.container.innerHTML = "";
+	var resultDiv = document.createElement("div");
+	resultDiv.id = "error";
+	resultDiv.insertAdjacentHTML("afterbegin", "Error: " + msg);
+	self.container.appendChild(resultDiv);
+};

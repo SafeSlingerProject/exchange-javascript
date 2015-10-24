@@ -64,7 +64,7 @@ SafeSlinger.HTTPSConnection.prototype.doPostAjax = function(name, packetdata, ca
 	});
 };
 
-SafeSlinger.HTTPSConnection.prototype.assignUser = function(ssExchange, dataCommitment, callback) {
+SafeSlinger.HTTPSConnection.prototype.assignUser = function(dataCommitment, callback) {
 	var self = this;
 	if(!self.connected)
 		return null;
@@ -94,8 +94,6 @@ SafeSlinger.HTTPSConnection.prototype.syncUsers = function(userID, minID, uidSet
 	console.log("dataCommitment");
 	console.log(dataCommitment);
 	var pack = SafeSlinger.jspack.Pack('!' + dataCommitment.length + 'B', dataCommitment);
-	//var pack = SafeSlinger.jspack.Pack('!' + num_item + 'i' + (dataCommitment.length-num_item) + 'B', dataCommitment);
-	//pack = meta;
 	console.log("pack");
 	console.log(pack);
 	var packBin = SafeSlinger.util.createBinString(pack);
@@ -119,7 +117,6 @@ SafeSlinger.HTTPSConnection.prototype.syncData = function(userID, protocolCommit
 	if(!self.connected)
 		return null;
 	console.log("************** HTTP syncData *******************");
-	//var commit = protocolCommitment + dhpubkey + encryptedData;
 	var commit = protocolCommitment.concat(dhpubkey).concat(encryptedData);
 	console.log("commit");
 	console.log(commit);
@@ -141,6 +138,7 @@ SafeSlinger.HTTPSConnection.prototype.syncData = function(userID, protocolCommit
 
 	self.doPostAjax('/syncData', dataObj, callback);
 }
+
 
 SafeSlinger.HTTPSConnection.prototype.syncSignatures = function(userID, uidSet, sig, callback) {
 	var self = this;

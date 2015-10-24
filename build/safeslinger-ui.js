@@ -140,7 +140,7 @@ SafeSlingerUI.prototype.progressData = function (){
 }
 SafeSlingerUI.prototype.showPhrases = function(position, hash, decoy1, decoy2) {
 	var self = this;
-	var selected = -1;
+	var selected = null;
 	self.container.innerHTML = "";
 	var phraseDiv = document.createElement("div");
 	
@@ -150,48 +150,52 @@ SafeSlingerUI.prototype.showPhrases = function(position, hash, decoy1, decoy2) {
 	console.log("decoy2 --> " + decoy2);
 
 	var hashes = [];	
-	hashes[position-1] = SafeSlinger.util.getNumberPhrase(hash);
+	hashes[position-1] = hash;
 	switch (position-1) {
 	case 0:
-		hashes[1] = SafeSlinger.util.getNumberPhrase(decoy1);
-		hashes[2] = SafeSlinger.util.getNumberPhrase(decoy2);
+		hashes[1] = decoy1;
+		hashes[2] = decoy2;
 		break;
 	case 1:
-		hashes[0] = SafeSlinger.util.getNumberPhrase(decoy1);
-		hashes[2] = SafeSlinger.util.getNumberPhrase(decoy2);
+		hashes[0] = decoy1;
+		hashes[2] = decoy2;
 		break;
 	case 2:
-		hashes[0] = SafeSlinger.util.getNumberPhrase(decoy1);
-		hashes[1] = SafeSlinger.util.getNumberPhrase(decoy2);
+		hashes[0] = decoy1;
+		hashes[1] = decoy2;
 		break;
 	}
 	
+	var phrase1 = SafeSlinger.util.getNumberPhrase(hashes[0]);
+	var phrase2 = SafeSlinger.util.getNumberPhrase(hashes[1]);
+	var phrase3 = SafeSlinger.util.getNumberPhrase(hashes[2]);
+		
 	var input1 = document.createElement("input");
 	input1.type = "radio";
 	input1.name = "phrase";
 	input1.id = "first";
-	input1.value = hashes[0];
+	input1.value = phrase1;
 	var label1 = document.createElement("label");
 	label1.for = "first";
-	label1.innerHTML = hashes[0];
+	label1.innerHTML = phrase1;
 
 	var input2 = document.createElement("input");
 	input2.type = "radio";
 	input2.name = "phrase";
 	input2.id = "second";
-	input2.value = hashes[1];
+	input2.value = phrase2;
 	var label2 = document.createElement("label");
 	label2.for = "second";
-	label2.innerHTML = hashes[1];
+	label2.innerHTML = phrase2;
 
 	var input3 = document.createElement("input");
 	input3.type = "radio";
 	input3.name = "phrase";
 	input3.id = "third";
-	input3.value = hashes[2];
+	input3.value = phrase3;
 	var label3 = document.createElement("label");
 	label3.for = "third";
-	label3.innerHTML = hashes[2];
+	label3.innerHTML = phrase3;
 
 	var noMatch = document.createElement("input");
 	noMatch.type = "submit";
@@ -211,11 +215,11 @@ SafeSlingerUI.prototype.showPhrases = function(position, hash, decoy1, decoy2) {
 	next.value = "Next";
 	next.addEventListener("click", function (){
 		if (document.getElementById("first").checked) {
-			selected = 1;
+			selected = hashes[0];
 		} else if (document.getElementById("second").checked) {
-			selected = 2;			
+			selected = hashes[1];			
 		} else if (document.getElementById("third").checked) {
-			selected = 3;			
+			selected = hashes[2];			
 		}
 		self.ssExchange.syncSignaturesRequest(selected, function (response) {
 			console.log(response);
@@ -261,21 +265,11 @@ SafeSlingerUI.prototype.showResults = function(plaintextSet) {
 	var resultDiv = document.createElement("div");
 	resultDiv.id = "plain-set";
 
-	resultDiv.insertAdjacentHTML("afterbegin", "Result: " + plaintextSet);
+	resultDiv.insertAdjacentHTML("afterbegin", "Result: " + JSON.stringify(plaintextSet));
 
 	self.container.appendChild(resultDiv);
 };
 
-SafeSlingerUI.prototype.showError = function(msg) {
-	var self = this;
-	self.container.innerHTML = "";
-	var resultDiv = document.createElement("div");
-	resultDiv.id = "error";
-
-	resultDiv.insertAdjacentHTML("afterbegin", "Error: " + msg);
-
-	self.container.appendChild(resultDiv);
-};
 SafeSlingerUI.util = {};
 
 SafeSlingerUI.util.validateLink = function (link) {
@@ -321,6 +315,14 @@ SafeSlingerUI.util.validateLink = function (link) {
 
 SafeSlingerUI.util.isNum = function (number){
 	return !isNaN(number);
-}
+};
+
+SafeSlingerUI.util.showError = function (self, msg){
+	self.container.innerHTML = "";
+	var resultDiv = document.createElement("div");
+	resultDiv.id = "error";
+	resultDiv.insertAdjacentHTML("afterbegin", "Error: " + msg);
+	self.container.appendChild(resultDiv);
+};
 	return SafeSlingerUI;
 })();

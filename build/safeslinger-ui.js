@@ -1,6 +1,30 @@
 /*! 
 SafeSlinger 0.1.0
 */
+/*
+ * The MIT License (MIT)
+ * 
+ * Copyright (c) 2010-2015 Carnegie Mellon University
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 var SafeSlingerUI = (function (){
 	var SafeSlingerUI = {};
 SafeSlingerUI = function (container){
@@ -74,7 +98,6 @@ SafeSlingerUI.prototype.showGetNumView = function() {
 	submit.type = 'submit';
 	submit.id = 'submit-users';
 	submit.addEventListener("click", function (){
-		//console.log(document.getElementById("num-users").value);
 		var ssExchange = new SafeSlinger.SafeSlingerExchange("https://01060000t-dot-slinger-dev.appspot.com");
 		self.ssExchange = ssExchange;
 		self.ssExchange.numUsers = document.getElementById("num-users").value;
@@ -166,9 +189,9 @@ SafeSlingerUI.prototype.showPhrases = function(position, hash, decoy1, decoy2) {
 		break;
 	}
 	
-	var phrase1 = SafeSlinger.util.getNumberPhrase(hashes[0]);
-	var phrase2 = SafeSlinger.util.getNumberPhrase(hashes[1]);
-	var phrase3 = SafeSlinger.util.getNumberPhrase(hashes[2]);
+	var phrase1 = SafeSlinger.util.getWordPhrase(hashes[0]) +" ("+ SafeSlinger.util.getNumberPhrase(hashes[0]) +") ";
+	var phrase2 = SafeSlinger.util.getWordPhrase(hashes[1]) +" ("+ SafeSlinger.util.getNumberPhrase(hashes[1]) +") ";
+	var phrase3 = SafeSlinger.util.getWordPhrase(hashes[2]) +" ("+ SafeSlinger.util.getNumberPhrase(hashes[2]) +") ";
 		
 	var input1 = document.createElement("input");
 	input1.type = "radio";
@@ -231,8 +254,10 @@ SafeSlingerUI.prototype.showPhrases = function(position, hash, decoy1, decoy2) {
 	var br = document.createElement("br");
 	phraseDiv.appendChild(input1);
 	phraseDiv.appendChild(label1);
+	phraseDiv.appendChild(br);
 	phraseDiv.appendChild(input2);
 	phraseDiv.appendChild(label2);
+	phraseDiv.appendChild(br);
 	phraseDiv.appendChild(input3);
 	phraseDiv.appendChild(label3);
 	phraseDiv.appendChild(br);

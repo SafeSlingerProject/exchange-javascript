@@ -1,6 +1,30 @@
 /*! 
 SafeSlinger 0.1.0
 */
+/*
+ * The MIT License (MIT)
+ * 
+ * Copyright (c) 2010-2015 Carnegie Mellon University
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 var SafeSlinger = (function (){
 	var SafeSlinger = {};
 	SafeSlinger.jspack = new JSPack();
@@ -29,7 +53,6 @@ SafeSlinger.HTTPSConnection.prototype.doPost = function(name, packetdata, callba
 	self.connection.responseType = "arraybuffer";
 
 	self.connection.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-	//self.connection.setRequestHeader("Content-Type","application/octet-stream");
 	self.connection.onload = function (e){
 		var response = self.connection.response;
 		console.log(self.connection);
@@ -225,20 +248,7 @@ SafeSlinger.HTTPSConnection.prototype.syncMatch = function(userID, uidSet, match
 SafeSlinger.SafeSlingerExchange = function (address){
 	var self = this;
 
-	// TODO: check at runtime for compatible browsers supporting CryptoJS.SHA3
-	
-	// TODO: check at runtime for compatible browsers supporting typed arrays:
-	// Chrome 7
-	// Firefox (Gecko) 4.0 (2)
-	// Internet Explorer 10
-	// Opera 11.6
-	// Safari 5.1
-	// Android 4
-	// Chrome for Android (Yes)
-	// Firefox Mobile (Gecko) 4.0 (2)
-	// IE Mobile 10
-	// Opera Mobile 11.6
-	// Safari Mobile 4.2
+	// TODO: check at runtime for compatible browsers supporting CryptoJS:
 	
 	// networking object
 	self.version = 1 << 24 | 8 << 16;
@@ -283,7 +293,6 @@ SafeSlinger.SafeSlingerExchange.prototype.beginExchange = function (data) {
 	self.data = data;
 	console.log("Data: " + self.data);
 	
-	// TODO: Developer notes that SHA3 should be named Keccak[c=2d].
 	// TODO: Determine if CryptoJS.lib.WordArray.random() or window.crypto.getRandomValues() is better
 	
 	self.matchNonce = CryptoJS.lib.WordArray.random(256/8);	
@@ -297,7 +306,11 @@ SafeSlinger.SafeSlingerExchange.prototype.beginExchange = function (data) {
 	console.log("Match Hash: " + self.matchHash);
 	console.log("Wrong Hash: " + self.wrongHash);
 
-	self.encryptedData = CryptoJS.AES.encrypt(data, getAesKeyWords(self.matchNonce), { iv: getAesIvWords(self.matchNonce) }).ciphertext;
+	self.encryptedData = CryptoJS.AES.encrypt(
+			data, 
+			getAesKeyWords(self.matchNonce), 
+			{ iv: getAesIvWords(self.matchNonce), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7  }
+		).ciphertext;
 	console.log("Encrypted Data: " + self.encryptedData);
 
 	var protWords = CryptoJS.enc.Hex.parse(self.matchHash.toString() + self.wrongHash.toString());
@@ -380,6 +393,8 @@ SafeSlinger.SafeSlingerExchange.prototype.syncUsers = function (response){
 				var commitment = CryptoJS.enc.Latin1.parse(atob(deltas[i].commit_b64));
 				self.dataCommitmentSet[uid] = commitment;
 
+			 	// TODO: verify all commits are appropriately sized
+			 	
 				console.log(uid +"'s dataCommitment: " + self.dataCommitmentSet[uid]);
 
 				self.numUsers_Recv++;
@@ -400,8 +415,6 @@ SafeSlinger.SafeSlingerExchange.prototype.syncUsers = function (response){
 		console.log("All commitments received");
 		console.log(self.dataCommitmentSet);
 		
-	 	// TODO: verify all commits are appropriately sized
-	 	
 		self.syncDataRequest(function (response){
 			self.syncData(response);
 		});
@@ -451,6 +464,8 @@ SafeSlinger.SafeSlingerExchange.prototype.syncData = function (response) {
 				console.log(uid +"'s dhpubkey: " + self.dhpubkeySet[uid]);
 				console.log(uid +"'s receivedcipher: " + self.receivedcipherSet[uid]);
 
+			 	// TODO: verify all data received hashes to each previous commitment received				
+
 				console.log(uid +"'s data commit: " + self.dataCommitmentSet[uid]);
 				console.log(uid +"'s data hash: " + CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(data), {outputLength: 256}));
 
@@ -482,11 +497,11 @@ SafeSlinger.SafeSlingerExchange.prototype.syncData = function (response) {
 		self.uidSet.sort();
  		for(var i = 0; i < self.uidSet.length; i++){
 			var uid = self.uidSet[i];
-			hash += self.protoCommitmentSet[uid];
-			hash += self.dhpubkeySet[uid];
-			hash += self.receivedcipherSet[uid];
+			hash += self.protoCommitmentSet[uid].toString(CryptoJS.enc.Latin1);
+			hash += self.dhpubkeySet[uid].toString(CryptoJS.enc.Latin1);
+			hash += self.receivedcipherSet[uid].toString(CryptoJS.enc.Latin1);
  		}
-		self.hash = CryptoJS.SHA3(hash, {outputLength: 256});
+		self.hash = CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(hash), {outputLength: 256});
 		console.log("Hash: " + self.hash);
 
 		// TODO: assign deterministic decoy values
@@ -510,19 +525,21 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignaturesRequest = function (sele
 	console.log(self.uidSet);
 
 	if (selectedHash != null && selectedHash.toString() == self.getHash24Bits().toString()) {
+		// match
 		var sig1 = self.matchExtrahash;
 		var sig2 = self.wrongHash;
 	} else {
+		// wrong
 		var sig1 = self.matchHash;
 		var sig2 = self.wrongNonce;
 	}
-	var sigWords = CryptoJS.enc.Hex.parse(sig1.toString() + sig2.toString());
+	var sigWords = CryptoJS.enc.Latin1.parse(sig1.toString(CryptoJS.enc.Latin1) + sig2.toString(CryptoJS.enc.Latin1));
 	self.sig = sigWords;
 	console.log("Signature: " + self.sig);
 	self.signatureSet[self.userID] = self.sig;
 	
 	self.httpclient.syncSignatures(self.userID, self.uidSet, 
-			SafeSlinger.util.parseHexString(self.signatureSet[self.userID].toString()), callback);
+			SafeSlinger.util.parseHexString(self.sig.toString()), callback);
 }
 
 SafeSlinger.SafeSlingerExchange.prototype.syncSignatures = function (response){
@@ -547,9 +564,27 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignatures = function (response){
 				
 				console.log(uid +"'s signature: " + self.signatureSet[uid]);
 
+			 	// TODO: verify all data received hashes to each previous commitment received
+				
 				console.log(uid +"'s protoCommit: " + self.protoCommitmentSet[uid]);
-				console.log(uid +"'s wrong sig protoCommit: " + CryptoJS.SHA3(CryptoJS.enc.Latin1.parse( CryptoJS.enc.Latin1.parse(atob(deltas[i].signature_b64).substring(0,32)) + CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(atob(deltas[i].signature_b64).substring(32)), {outputLength: 256}).toString(CryptoJS.enc.Latin1) ), {outputLength: 256}));
-				console.log(uid +"'s match sig protoCommit: " + CryptoJS.SHA3(CryptoJS.enc.Latin1.parse( CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(atob(deltas[i].signature_b64).substring(0,32)), {outputLength: 256}).toString(CryptoJS.enc.Latin1) + CryptoJS.enc.Latin1.parse(atob(deltas[i].signature_b64).substring(32)) ), {outputLength: 256}));
+				console.log(uid +"'s match sig protoCommit: " + 
+						CryptoJS.SHA3(
+							CryptoJS.enc.Latin1.parse( 
+								CryptoJS.SHA3(atob(deltas[i].signature_b64).substring(0,32).toString(CryptoJS.enc.Latin1), {outputLength: 256}).toString(CryptoJS.enc.Latin1) + 
+								atob(deltas[i].signature_b64).substring(32)
+							), 
+							{outputLength: 256}
+						)
+					);
+				console.log(uid +"'s wrong sig protoCommit: " + 
+					CryptoJS.SHA3(
+						CryptoJS.enc.Latin1.parse( 
+							atob(deltas[i].signature_b64).substring(0,32) + 
+							CryptoJS.SHA3(atob(deltas[i].signature_b64).substring(32).toString(CryptoJS.enc.Latin1), {outputLength: 256}).toString(CryptoJS.enc.Latin1) 
+						), 
+						{outputLength: 256}
+					)
+				);
 
 				self.numSigs_Recv++;
 				console.log("Received " + self.numSigs_Recv + "/" + self.numUsers + " Items");
@@ -569,8 +604,6 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignatures = function (response){
 		console.log("All sigs received");
 		console.log(self.signatureSet);
 		
-	 	// TODO: verify all data received hashes to each previous commitment received
-		
 		self.syncKeyNodesRequest(function (response){
 			self.syncKeyNodes(response);
 		});
@@ -581,7 +614,6 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignatures = function (response){
 SafeSlinger.SafeSlingerExchange.prototype.syncKeyNodesRequest = function (callback){
 	var self = this;
 		
-	// TODO: compute keys nodes and shared secret
 	if (self.numUsers == 2) {
 		for(var i = 0; i < self.uidSet.length; i++){
 			if (self.uidSet[i] != self.userID) {
@@ -594,7 +626,11 @@ SafeSlinger.SafeSlingerExchange.prototype.syncKeyNodesRequest = function (callba
 		self.groupKey = CryptoJS.enc.Hex.parse(bigInt2str(dh.computeSecret(pub, pri), 16));
 		console.log("Group Secret Key: " + self.groupKey);
 
-		self.encMatchNonceSet[self.userID] = CryptoJS.AES.encrypt(self.matchNonce, getAesKeyWords(self.groupKey), { iv: getAesIvWords(self.groupKey) }).ciphertext;
+		self.encMatchNonceSet[self.userID] = CryptoJS.AES.encrypt(
+				self.matchNonce, 
+				getAesKeyWords(self.groupKey), 
+				{ iv: getAesIvWords(self.groupKey), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+			).ciphertext;
 		console.log("Encrypted Match Nonce: " + self.encMatchNonceSet[self.userID]);
 		
 		self.syncMatchRequest(function (response){
@@ -606,6 +642,8 @@ SafeSlinger.SafeSlingerExchange.prototype.syncKeyNodesRequest = function (callba
 		self.uidSet = [];
 		self.uidSet.push(self.userID);
 		console.log(self.uidSet);
+
+		// TODO: compute key nodes for 3+
 
 		self.httpclient.syncKeyNodes(self.userID, self.userIdPost, 
 				SafeSlinger.util.parseHexString(self.nextNodePubKey.toString()), callback);
@@ -643,8 +681,6 @@ SafeSlinger.SafeSlingerExchange.prototype.syncKeyNodes = function (response){
 		console.log("All KeyNodes received");
 		console.log(self.keyNodes);
 
-	 	// TODO: verify all data received hashes to each previous commitment received
-		
 		self.syncMatchRequest(function (response){
 			self.syncMatch(response);
 		});
@@ -660,8 +696,6 @@ SafeSlinger.SafeSlingerExchange.prototype.syncMatchRequest = function (callback)
 	self.uidSet.push(self.userID);
 	console.log(self.uidSet);
 	
-	// TODO: encrypt match nonce with shared secret
-
 	self.httpclient.syncMatch(self.userID, self.uidSet, 
 		SafeSlinger.util.parseHexString(self.encMatchNonceSet[self.userID].toString()), callback);
 }
@@ -706,17 +740,25 @@ SafeSlinger.SafeSlingerExchange.prototype.syncMatch = function (response){
 		console.log("All Match received");
 		console.log(self.encMatchNonceSet);
 
-	 	// TODO: verify all data received hashes to each previous commitment received
-		
 		for(var i = 0 ;i < self.numUsers; i++){
 			var uid = self.uidSet[i];
 			// decrypt recieved match nonces with shared secret
-			var decNonce=CryptoJS.AES.decrypt({ ciphertext: self.encMatchNonceSet[uid] }, getAesKeyWords(self.groupKey), { iv: getAesIvWords(self.groupKey) });
+			var decNonce = CryptoJS.AES.decrypt(
+					{ ciphertext: self.encMatchNonceSet[uid] }, 
+					getAesKeyWords(self.groupKey), 
+					{ iv: getAesIvWords(self.groupKey), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+			);
 			self.matchNonceSet[uid] = decNonce;
 			console.log(uid +"'s Decrypted Match Nonce: " + self.matchNonceSet[uid]);
 
+		 	// TODO: verify all data received hashes to each previous commitment received
+			
 			// decrypt recieved data with recieved match nonces
-			var decData=CryptoJS.AES.decrypt({ ciphertext: self.receivedcipherSet[uid] }, getAesKeyWords(self.matchNonceSet[uid]), { iv: getAesIvWords(self.matchNonceSet[uid]) });
+			var decData = CryptoJS.AES.decrypt(
+					{ ciphertext: self.receivedcipherSet[uid] }, 
+					getAesKeyWords(self.matchNonceSet[uid]), 
+					{ iv: getAesIvWords(self.matchNonceSet[uid]), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+			);
 			self.dataSet[uid] = CryptoJS.enc.Utf8.stringify(decData);
 			console.log(uid +"'s Decrypted Data: " + self.dataSet[uid]);
 		}
@@ -736,11 +778,11 @@ function fibonacci(n) {
 }
 
 function getAesKeyWords(key){
-	return CryptoJS.SHA3(CryptoJS.enc.Utf8.parse("1") + key, {outputLength: 256});
+	return CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(CryptoJS.enc.Utf8.stringify("1") + CryptoJS.enc.Latin1.stringify(key)), {outputLength: 256});
 }
 
 function getAesIvWords(key){
-	var words = CryptoJS.SHA3(CryptoJS.enc.Utf8.parse("2") + key, {outputLength: 256});
+	var words = CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(CryptoJS.enc.Utf8.stringify("2") + CryptoJS.enc.Latin1.stringify(key)), {outputLength: 256});
 	var latin = CryptoJS.enc.Latin1.stringify(words);
 	var substring = latin.substring(0, 16); // truncate to 128 bits
 	return CryptoJS.enc.Latin1.parse(substring);
@@ -812,45 +854,141 @@ SafeSlinger.DiffieHellman.prototype.showParams = function (){
 }
 SafeSlinger.util = {};
 
-SafeSlinger.util.parseHexString = function (str){
-    var result = [];
-    while (str.length >= 2) { 
-        result.push(parseInt(str.substring(0, 2), 16));
+SafeSlinger.util.parseHexString = function(str) {
+	var result = [];
+	while (str.length >= 2) {
+		result.push(parseInt(str.substring(0, 2), 16));
 
-        str = str.substring(2, str.length);
-    }
+		str = str.substring(2, str.length);
+	}
 
-    return result;
+	return result;
 };
 
-SafeSlinger.util.createHexString = function (arr) {
-    var result = "";
-    var z;
+SafeSlinger.util.createHexString = function(arr) {
+	var result = "";
+	var z;
 
-    for (var i = 0; i < arr.length; i++) {
-        var str = arr[i].toString(16);
+	for (var i = 0; i < arr.length; i++) {
+		var str = arr[i].toString(16);
 
-        z = 2 - str.length + 1;
-        str = Array(z).join("0") + str;
+		z = 2 - str.length + 1;
+		str = Array(z).join("0") + str;
 
-        result += str;
-    }
+		result += str;
+	}
 
-    return result;
+	return result;
 };
 
-SafeSlinger.util.createBinString = function (arr) {
-    var retStr = "";
-    for(var i=0;i<arr.length; i++){
-        retStr = retStr + String.fromCharCode(arr[i]);
-    }
-    return retStr;
+SafeSlinger.util.createBinString = function(arr) {
+	var retStr = "";
+	for (var i = 0; i < arr.length; i++) {
+		retStr = retStr + String.fromCharCode(arr[i]);
+	}
+	return retStr;
 };
 
-SafeSlinger.util.getNumberPhrase = function (arr){
-	return (arr[0]+1) + " " + (arr[1]+256+1) + " " + (arr[2]+1);
+SafeSlinger.util.getNumberPhrase = function(arr) {
+	return (arr[0] + 1) + " " + (arr[1] + 256 + 1) + " " + (arr[2] + 1);
 }
 
+SafeSlinger.util.getWordPhrase = function(arr) {
+	return (evenWords[arr[0]]) + " " + (oddWords[arr[1]]) + " "
+			+ (evenWords[arr[2]]);
+}
 
+var evenWords = [ "aardvark", "absurd", "accrue", "acme", "adrift", "adult",
+		"afflict", "ahead", "aimless", "Algol", "allow", "alone", "ammo",
+		"ancient", "apple", "artist", "assume", "Athens", "atlas", "Aztec",
+		"baboon", "backfield", "backward", "banjo", "beaming", "bedlamp",
+		"beehive", "beeswax", "befriend", "Belfast", "berserk", "billiard",
+		"bison", "blackjack", "blockade", "blowtorch", "bluebird", "bombast",
+		"bookshelf", "brackish", "breadline", "breakup", "brickyard",
+		"briefcase", "Burbank", "button", "buzzard", "cement", "chairlift",
+		"chatter", "checkup", "chisel", "choking", "chopper", "Christmas",
+		"clamshell", "classic", "classroom", "cleanup", "clockwork", "cobra",
+		"commence", "concert", "cowbell", "crackdown", "cranky", "crowfoot",
+		"crucial", "crumpled", "crusade", "cubic", "dashboard", "deadbolt",
+		"deckhand", "dogsled", "dragnet", "drainage", "dreadful", "drifter",
+		"dropper", "drumbeat", "drunken", "Dupont", "dwelling", "eating",
+		"edict", "egghead", "eightball", "endorse", "endow", "enlist", "erase",
+		"escape", "exceed", "eyeglass", "eyetooth", "facial", "fallout",
+		"flagpole", "flatfoot", "flytrap", "fracture", "framework", "freedom",
+		"frighten", "gazelle", "Geiger", "glitter", "glucose", "goggles",
+		"goldfish", "gremlin", "guidance", "hamlet", "highchair", "hockey",
+		"indoors", "indulge", "inverse", "involve", "island", "jawbone",
+		"keyboard", "kickoff", "kiwi", "klaxon", "locale", "lockup", "merit",
+		"minnow", "miser", "Mohawk", "mural", "music", "necklace", "Neptune",
+		"newborn", "nightbird", "Oakland", "obtuse", "offload", "optic",
+		"orca", "payday", "peachy", "pheasant", "physique", "playhouse",
+		"Pluto", "preclude", "prefer", "preshrunk", "printer", "prowler",
+		"pupil", "puppy", "python", "quadrant", "quiver", "quota", "ragtime",
+		"ratchet", "rebirth", "reform", "regain", "reindeer", "rematch",
+		"repay", "retouch", "revenge", "reward", "rhythm", "ribcage",
+		"ringbolt", "robust", "rocker", "ruffled", "sailboat", "sawdust",
+		"scallion", "scenic", "scorecard", "Scotland", "seabird", "select",
+		"sentence", "shadow", "shamrock", "showgirl", "skullcap", "skydive",
+		"slingshot", "slowdown", "snapline", "snapshot", "snowcap",
+		"snowslide", "solo", "southward", "soybean", "spaniel", "spearhead",
+		"spellbind", "spheroid", "spigot", "spindle", "spyglass", "stagehand",
+		"stagnate", "stairway", "standard", "stapler", "steamship", "sterling",
+		"stockman", "stopwatch", "stormy", "sugar", "surmount", "suspense",
+		"sweatband", "swelter", "tactics", "talon", "tapeworm", "tempest",
+		"tiger", "tissue", "tonic", "topmost", "tracker", "transit", "trauma",
+		"treadmill", "Trojan", "trouble", "tumor", "tunnel", "tycoon", "uncut",
+		"unearth", "unwind", "uproot", "upset", "upshot", "vapor", "village",
+		"virus", "Vulcan", "waffle", "wallet", "watchword", "wayside",
+		"willow", "woodlark", "Zulu", ];
+
+var oddWords = [ "adroitness", "adviser", "aftermath", "aggregate", "alkali",
+		"almighty", "amulet", "amusement", "antenna", "applicant", "Apollo",
+		"armistice", "article", "asteroid", "Atlantic", "atmosphere",
+		"autopsy", "Babylon", "backwater", "barbecue", "belowground",
+		"bifocals", "bodyguard", "bookseller", "borderline", "bottomless",
+		"Bradbury", "bravado", "Brazilian", "breakaway", "Burlington",
+		"businessman", "butterfat", "Camelot", "candidate", "cannonball",
+		"Capricorn", "caravan", "caretaker", "celebrate", "cellulose",
+		"certify", "chambermaid", "Cherokee", "Chicago", "clergyman",
+		"coherence", "combustion", "commando", "company", "component",
+		"concurrent", "confidence", "conformist", "congregate", "consensus",
+		"consulting", "corporate", "corrosion", "councilman", "crossover",
+		"crucifix", "cumbersome", "customer", "Dakota", "decadence",
+		"December", "decimal", "designing", "detector", "detergent",
+		"determine", "dictator", "dinosaur", "direction", "disable",
+		"disbelief", "disruptive", "distortion", "document", "embezzle",
+		"enchanting", "enrollment", "enterprise", "equation", "equipment",
+		"escapade", "Eskimo", "everyday", "examine", "existence", "exodus",
+		"fascinate", "filament", "finicky", "forever", "fortitude",
+		"frequency", "gadgetry", "Galveston", "getaway", "glossary",
+		"gossamer", "graduate", "gravity", "guitarist", "hamburger",
+		"Hamilton", "handiwork", "hazardous", "headwaters", "hemisphere",
+		"hesitate", "hideaway", "holiness", "hurricane", "hydraulic",
+		"impartial", "impetus", "inception", "indigo", "inertia", "infancy",
+		"inferno", "informant", "insincere", "insurgent", "integrate",
+		"intention", "inventive", "Istanbul", "Jamaica", "Jupiter", "leprosy",
+		"letterhead", "liberty", "maritime", "matchmaker", "maverick",
+		"Medusa", "megaton", "microscope", "microwave", "midsummer",
+		"millionaire", "miracle", "misnomer", "molasses", "molecule",
+		"Montana", "monument", "mosquito", "narrative", "nebula", "newsletter",
+		"Norwegian", "October", "Ohio", "onlooker", "opulent", "Orlando",
+		"outfielder", "Pacific", "pandemic", "Pandora", "paperweight",
+		"paragon", "paragraph", "paramount", "passenger", "pedigree",
+		"Pegasus", "penetrate", "perceptive", "performance", "pharmacy",
+		"phonetic", "photograph", "pioneer", "pocketful", "politeness",
+		"positive", "potato", "processor", "provincial", "proximate",
+		"puberty", "publisher", "pyramid", "quantity", "racketeer",
+		"rebellion", "recipe", "recover", "repellent", "replica", "reproduce",
+		"resistor", "responsive", "retraction", "retrieval", "retrospect",
+		"revenue", "revival", "revolver", "sandalwood", "sardonic", "Saturday",
+		"savagery", "scavenger", "sensation", "sociable", "souvenir",
+		"specialist", "speculate", "stethoscope", "stupendous", "supportive",
+		"surrender", "suspicious", "sympathy", "tambourine", "telephone",
+		"therapist", "tobacco", "tolerance", "tomorrow", "torpedo",
+		"tradition", "travesty", "trombonist", "truncated", "typewriter",
+		"ultimate", "undaunted", "underfoot", "unicorn", "unify", "universe",
+		"unravel", "upcoming", "vacancy", "vagabond", "vertigo", "Virginia",
+		"visitor", "vocalist", "voyager", "warranty", "Waterloo", "whimsical",
+		"Wichita", "Wilmington", "Wyoming", "yesteryear", "Yucatan", ];
 	return SafeSlinger;
 })();

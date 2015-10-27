@@ -26,9 +26,9 @@ SafeSlingerUI.prototype.showPhrases = function(position, hash, decoy1, decoy2) {
 		break;
 	}
 	
-	var phrase1 = SafeSlinger.util.getNumberPhrase(hashes[0]);
-	var phrase2 = SafeSlinger.util.getNumberPhrase(hashes[1]);
-	var phrase3 = SafeSlinger.util.getNumberPhrase(hashes[2]);
+	var phrase1 = SafeSlinger.util.getWordPhrase(hashes[0]) +" ("+ SafeSlinger.util.getNumberPhrase(hashes[0]) +") ";
+	var phrase2 = SafeSlinger.util.getWordPhrase(hashes[1]) +" ("+ SafeSlinger.util.getNumberPhrase(hashes[1]) +") ";
+	var phrase3 = SafeSlinger.util.getWordPhrase(hashes[2]) +" ("+ SafeSlinger.util.getNumberPhrase(hashes[2]) +") ";
 		
 	var input1 = document.createElement("input");
 	input1.type = "radio";
@@ -91,8 +91,10 @@ SafeSlingerUI.prototype.showPhrases = function(position, hash, decoy1, decoy2) {
 	var br = document.createElement("br");
 	phraseDiv.appendChild(input1);
 	phraseDiv.appendChild(label1);
+	phraseDiv.appendChild(br);
 	phraseDiv.appendChild(input2);
 	phraseDiv.appendChild(label2);
+	phraseDiv.appendChild(br);
 	phraseDiv.appendChild(input3);
 	phraseDiv.appendChild(label3);
 	phraseDiv.appendChild(br);

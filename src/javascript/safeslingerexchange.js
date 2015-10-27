@@ -1,20 +1,7 @@
 SafeSlinger.SafeSlingerExchange = function (address){
 	var self = this;
 
-	// TODO: check at runtime for compatible browsers supporting CryptoJS.SHA3
-	
-	// TODO: check at runtime for compatible browsers supporting typed arrays:
-	// Chrome 7
-	// Firefox (Gecko) 4.0 (2)
-	// Internet Explorer 10
-	// Opera 11.6
-	// Safari 5.1
-	// Android 4
-	// Chrome for Android (Yes)
-	// Firefox Mobile (Gecko) 4.0 (2)
-	// IE Mobile 10
-	// Opera Mobile 11.6
-	// Safari Mobile 4.2
+	// TODO: check at runtime for compatible browsers supporting CryptoJS:
 	
 	// networking object
 	self.version = 1 << 24 | 8 << 16;
@@ -59,7 +46,6 @@ SafeSlinger.SafeSlingerExchange.prototype.beginExchange = function (data) {
 	self.data = data;
 	console.log("Data: " + self.data);
 	
-	// TODO: Developer notes that SHA3 should be named Keccak[c=2d].
 	// TODO: Determine if CryptoJS.lib.WordArray.random() or window.crypto.getRandomValues() is better
 	
 	self.matchNonce = CryptoJS.lib.WordArray.random(256/8);	
@@ -73,7 +59,11 @@ SafeSlinger.SafeSlingerExchange.prototype.beginExchange = function (data) {
 	console.log("Match Hash: " + self.matchHash);
 	console.log("Wrong Hash: " + self.wrongHash);
 
-	self.encryptedData = CryptoJS.AES.encrypt(data, getAesKeyWords(self.matchNonce), { iv: getAesIvWords(self.matchNonce) }).ciphertext;
+	self.encryptedData = CryptoJS.AES.encrypt(
+			data, 
+			getAesKeyWords(self.matchNonce), 
+			{ iv: getAesIvWords(self.matchNonce), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7  }
+		).ciphertext;
 	console.log("Encrypted Data: " + self.encryptedData);
 
 	var protWords = CryptoJS.enc.Hex.parse(self.matchHash.toString() + self.wrongHash.toString());
@@ -156,6 +146,8 @@ SafeSlinger.SafeSlingerExchange.prototype.syncUsers = function (response){
 				var commitment = CryptoJS.enc.Latin1.parse(atob(deltas[i].commit_b64));
 				self.dataCommitmentSet[uid] = commitment;
 
+			 	// TODO: verify all commits are appropriately sized
+			 	
 				console.log(uid +"'s dataCommitment: " + self.dataCommitmentSet[uid]);
 
 				self.numUsers_Recv++;
@@ -176,8 +168,6 @@ SafeSlinger.SafeSlingerExchange.prototype.syncUsers = function (response){
 		console.log("All commitments received");
 		console.log(self.dataCommitmentSet);
 		
-	 	// TODO: verify all commits are appropriately sized
-	 	
 		self.syncDataRequest(function (response){
 			self.syncData(response);
 		});
@@ -227,6 +217,8 @@ SafeSlinger.SafeSlingerExchange.prototype.syncData = function (response) {
 				console.log(uid +"'s dhpubkey: " + self.dhpubkeySet[uid]);
 				console.log(uid +"'s receivedcipher: " + self.receivedcipherSet[uid]);
 
+			 	// TODO: verify all data received hashes to each previous commitment received				
+
 				console.log(uid +"'s data commit: " + self.dataCommitmentSet[uid]);
 				console.log(uid +"'s data hash: " + CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(data), {outputLength: 256}));
 
@@ -258,11 +250,11 @@ SafeSlinger.SafeSlingerExchange.prototype.syncData = function (response) {
 		self.uidSet.sort();
  		for(var i = 0; i < self.uidSet.length; i++){
 			var uid = self.uidSet[i];
-			hash += self.protoCommitmentSet[uid];
-			hash += self.dhpubkeySet[uid];
-			hash += self.receivedcipherSet[uid];
+			hash += self.protoCommitmentSet[uid].toString(CryptoJS.enc.Latin1);
+			hash += self.dhpubkeySet[uid].toString(CryptoJS.enc.Latin1);
+			hash += self.receivedcipherSet[uid].toString(CryptoJS.enc.Latin1);
  		}
-		self.hash = CryptoJS.SHA3(hash, {outputLength: 256});
+		self.hash = CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(hash), {outputLength: 256});
 		console.log("Hash: " + self.hash);
 
 		// TODO: assign deterministic decoy values
@@ -286,19 +278,21 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignaturesRequest = function (sele
 	console.log(self.uidSet);
 
 	if (selectedHash != null && selectedHash.toString() == self.getHash24Bits().toString()) {
+		// match
 		var sig1 = self.matchExtrahash;
 		var sig2 = self.wrongHash;
 	} else {
+		// wrong
 		var sig1 = self.matchHash;
 		var sig2 = self.wrongNonce;
 	}
-	var sigWords = CryptoJS.enc.Hex.parse(sig1.toString() + sig2.toString());
+	var sigWords = CryptoJS.enc.Latin1.parse(sig1.toString(CryptoJS.enc.Latin1) + sig2.toString(CryptoJS.enc.Latin1));
 	self.sig = sigWords;
 	console.log("Signature: " + self.sig);
 	self.signatureSet[self.userID] = self.sig;
 	
 	self.httpclient.syncSignatures(self.userID, self.uidSet, 
-			SafeSlinger.util.parseHexString(self.signatureSet[self.userID].toString()), callback);
+			SafeSlinger.util.parseHexString(self.sig.toString()), callback);
 }
 
 SafeSlinger.SafeSlingerExchange.prototype.syncSignatures = function (response){
@@ -323,9 +317,27 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignatures = function (response){
 				
 				console.log(uid +"'s signature: " + self.signatureSet[uid]);
 
+			 	// TODO: verify all data received hashes to each previous commitment received
+				
 				console.log(uid +"'s protoCommit: " + self.protoCommitmentSet[uid]);
-				console.log(uid +"'s wrong sig protoCommit: " + CryptoJS.SHA3(CryptoJS.enc.Latin1.parse( CryptoJS.enc.Latin1.parse(atob(deltas[i].signature_b64).substring(0,32)) + CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(atob(deltas[i].signature_b64).substring(32)), {outputLength: 256}).toString(CryptoJS.enc.Latin1) ), {outputLength: 256}));
-				console.log(uid +"'s match sig protoCommit: " + CryptoJS.SHA3(CryptoJS.enc.Latin1.parse( CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(atob(deltas[i].signature_b64).substring(0,32)), {outputLength: 256}).toString(CryptoJS.enc.Latin1) + CryptoJS.enc.Latin1.parse(atob(deltas[i].signature_b64).substring(32)) ), {outputLength: 256}));
+				console.log(uid +"'s match sig protoCommit: " + 
+						CryptoJS.SHA3(
+							CryptoJS.enc.Latin1.parse( 
+								CryptoJS.SHA3(atob(deltas[i].signature_b64).substring(0,32).toString(CryptoJS.enc.Latin1), {outputLength: 256}).toString(CryptoJS.enc.Latin1) + 
+								atob(deltas[i].signature_b64).substring(32)
+							), 
+							{outputLength: 256}
+						)
+					);
+				console.log(uid +"'s wrong sig protoCommit: " + 
+					CryptoJS.SHA3(
+						CryptoJS.enc.Latin1.parse( 
+							atob(deltas[i].signature_b64).substring(0,32) + 
+							CryptoJS.SHA3(atob(deltas[i].signature_b64).substring(32).toString(CryptoJS.enc.Latin1), {outputLength: 256}).toString(CryptoJS.enc.Latin1) 
+						), 
+						{outputLength: 256}
+					)
+				);
 
 				self.numSigs_Recv++;
 				console.log("Received " + self.numSigs_Recv + "/" + self.numUsers + " Items");
@@ -345,8 +357,6 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignatures = function (response){
 		console.log("All sigs received");
 		console.log(self.signatureSet);
 		
-	 	// TODO: verify all data received hashes to each previous commitment received
-		
 		self.syncKeyNodesRequest(function (response){
 			self.syncKeyNodes(response);
 		});
@@ -357,7 +367,6 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignatures = function (response){
 SafeSlinger.SafeSlingerExchange.prototype.syncKeyNodesRequest = function (callback){
 	var self = this;
 		
-	// TODO: compute keys nodes and shared secret
 	if (self.numUsers == 2) {
 		for(var i = 0; i < self.uidSet.length; i++){
 			if (self.uidSet[i] != self.userID) {
@@ -370,7 +379,11 @@ SafeSlinger.SafeSlingerExchange.prototype.syncKeyNodesRequest = function (callba
 		self.groupKey = CryptoJS.enc.Hex.parse(bigInt2str(dh.computeSecret(pub, pri), 16));
 		console.log("Group Secret Key: " + self.groupKey);
 
-		self.encMatchNonceSet[self.userID] = CryptoJS.AES.encrypt(self.matchNonce, getAesKeyWords(self.groupKey), { iv: getAesIvWords(self.groupKey) }).ciphertext;
+		self.encMatchNonceSet[self.userID] = CryptoJS.AES.encrypt(
+				self.matchNonce, 
+				getAesKeyWords(self.groupKey), 
+				{ iv: getAesIvWords(self.groupKey), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+			).ciphertext;
 		console.log("Encrypted Match Nonce: " + self.encMatchNonceSet[self.userID]);
 		
 		self.syncMatchRequest(function (response){
@@ -382,6 +395,8 @@ SafeSlinger.SafeSlingerExchange.prototype.syncKeyNodesRequest = function (callba
 		self.uidSet = [];
 		self.uidSet.push(self.userID);
 		console.log(self.uidSet);
+
+		// TODO: compute key nodes for 3+
 
 		self.httpclient.syncKeyNodes(self.userID, self.userIdPost, 
 				SafeSlinger.util.parseHexString(self.nextNodePubKey.toString()), callback);
@@ -419,8 +434,6 @@ SafeSlinger.SafeSlingerExchange.prototype.syncKeyNodes = function (response){
 		console.log("All KeyNodes received");
 		console.log(self.keyNodes);
 
-	 	// TODO: verify all data received hashes to each previous commitment received
-		
 		self.syncMatchRequest(function (response){
 			self.syncMatch(response);
 		});
@@ -436,8 +449,6 @@ SafeSlinger.SafeSlingerExchange.prototype.syncMatchRequest = function (callback)
 	self.uidSet.push(self.userID);
 	console.log(self.uidSet);
 	
-	// TODO: encrypt match nonce with shared secret
-
 	self.httpclient.syncMatch(self.userID, self.uidSet, 
 		SafeSlinger.util.parseHexString(self.encMatchNonceSet[self.userID].toString()), callback);
 }
@@ -482,17 +493,25 @@ SafeSlinger.SafeSlingerExchange.prototype.syncMatch = function (response){
 		console.log("All Match received");
 		console.log(self.encMatchNonceSet);
 
-	 	// TODO: verify all data received hashes to each previous commitment received
-		
 		for(var i = 0 ;i < self.numUsers; i++){
 			var uid = self.uidSet[i];
 			// decrypt recieved match nonces with shared secret
-			var decNonce=CryptoJS.AES.decrypt({ ciphertext: self.encMatchNonceSet[uid] }, getAesKeyWords(self.groupKey), { iv: getAesIvWords(self.groupKey) });
+			var decNonce = CryptoJS.AES.decrypt(
+					{ ciphertext: self.encMatchNonceSet[uid] }, 
+					getAesKeyWords(self.groupKey), 
+					{ iv: getAesIvWords(self.groupKey), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+			);
 			self.matchNonceSet[uid] = decNonce;
 			console.log(uid +"'s Decrypted Match Nonce: " + self.matchNonceSet[uid]);
 
+		 	// TODO: verify all data received hashes to each previous commitment received
+			
 			// decrypt recieved data with recieved match nonces
-			var decData=CryptoJS.AES.decrypt({ ciphertext: self.receivedcipherSet[uid] }, getAesKeyWords(self.matchNonceSet[uid]), { iv: getAesIvWords(self.matchNonceSet[uid]) });
+			var decData = CryptoJS.AES.decrypt(
+					{ ciphertext: self.receivedcipherSet[uid] }, 
+					getAesKeyWords(self.matchNonceSet[uid]), 
+					{ iv: getAesIvWords(self.matchNonceSet[uid]), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+			);
 			self.dataSet[uid] = CryptoJS.enc.Utf8.stringify(decData);
 			console.log(uid +"'s Decrypted Data: " + self.dataSet[uid]);
 		}
@@ -512,11 +531,11 @@ function fibonacci(n) {
 }
 
 function getAesKeyWords(key){
-	return CryptoJS.SHA3(CryptoJS.enc.Utf8.parse("1") + key, {outputLength: 256});
+	return CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(CryptoJS.enc.Utf8.stringify("1") + CryptoJS.enc.Latin1.stringify(key)), {outputLength: 256});
 }
 
 function getAesIvWords(key){
-	var words = CryptoJS.SHA3(CryptoJS.enc.Utf8.parse("2") + key, {outputLength: 256});
+	var words = CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(CryptoJS.enc.Utf8.stringify("2") + CryptoJS.enc.Latin1.stringify(key)), {outputLength: 256});
 	var latin = CryptoJS.enc.Latin1.stringify(words);
 	var substring = latin.substring(0, 16); // truncate to 128 bits
 	return CryptoJS.enc.Latin1.parse(substring);

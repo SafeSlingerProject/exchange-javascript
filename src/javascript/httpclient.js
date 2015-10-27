@@ -23,7 +23,6 @@ SafeSlinger.HTTPSConnection.prototype.doPost = function(name, packetdata, callba
 	self.connection.responseType = "arraybuffer";
 
 	self.connection.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-	//self.connection.setRequestHeader("Content-Type","application/octet-stream");
 	self.connection.onload = function (e){
 		var response = self.connection.response;
 		console.log(self.connection);

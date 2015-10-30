@@ -276,8 +276,10 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignaturesRequest = function (sele
 	self.uidSet = [];
 	self.uidSet.push(self.userID);
 	console.log(self.uidSet);
+	self.correctSig = false;
 
 	if (selectedHash != null && selectedHash.toString() == self.getHash24Bits().toString()) {
+		self.correctSig = true;
 		// match
 		var sig1 = self.matchExtrahash;
 		var sig2 = self.wrongHash;
@@ -356,6 +358,10 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignatures = function (response){
 	}else{
 		console.log("All sigs received");
 		console.log(self.signatureSet);
+
+		if (!self.correctSig){
+			return;
+		}
 		
 		self.syncKeyNodesRequest(function (response){
 			self.syncKeyNodes(response);

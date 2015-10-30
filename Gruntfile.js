@@ -16,17 +16,25 @@ module.exports = function(grunt) {
         dest: 'build/safeslinger.js'
       },
       ui : {
-        src: ['src/javascript/ui/module_begin.js','src/javascript/ui/constructUI.js',
-        'src/javascript/ui/landingpage.js', 'src/javascript/ui/numofusers.js', 
-        'src/javascript/ui/lowestnumber.js','src/javascript/ui/showphrases.js',
-        'src/javascript/util/SafeSlingerUIUtil.js',
-        'src/javascript/ui/module_end.js'],
-        dest: 'build/safeslinger-ui.js'
+		src: ['src/javascript/ui/module_begin.js','src/javascript/ui/constructUI.js',
+		'src/javascript/ui/landingpage.js', 'src/javascript/ui/numofusers.js', 
+		'src/javascript/ui/lowestnumber.js','src/javascript/ui/showphrases.js',
+		'src/javascript/ui/endingpage.js',
+		'src/javascript/util/SafeSlingerUIUtil.js',
+		'src/javascript/ui/module_end.js'],
+		dest: 'build/safeslinger-ui.js'
+      },
+      uivc : {
+        src: ['src/javascript/ui-vc/module_begin.js','src/javascript/ui-vc/constructUI.js',
+        'src/javascript/ui-vc/landingpage.js', 
+        'src/javascript/ui-vc/module_end.js'],
+        dest: 'build/safeslinger-ui-vc.js'
       }
+
     },
     watch: {
       scripts: {
-        files: ['src/javascript/*.js','src/javascript/ui/*.js', 'src/javascript/util/*.js'],
+        files: ['src/javascript/*.js','src/javascript/ui/*.js','src/javascript/ui-vc/*.js', 'src/javascript/util/*.js'],
         tasks: ['concat'],
         options: {
           interrupt: true,
@@ -53,7 +61,7 @@ module.exports = function(grunt) {
       },
       dist: {
         files: {
-          src: ['<%= concat.dist.dest %>', '<%= concat.dist.ui %>']
+          src: ['<%= concat.dist.dest %>', '<%= concat.dist.ui %>', '<%= concat.dist.ui-vc %>']
         }
       }
     }
@@ -64,5 +72,5 @@ module.exports = function(grunt) {
 
   grunt.registerTask('default', ['build']);
   //grunt.registerTask('build', ['concat:dist', 'concat:ui', 'jshint:dist']);
-  grunt.registerTask('build', ['concat:dist', 'concat:ui']);
+  grunt.registerTask('build', ['concat:dist', 'concat:ui', 'concat:uivc']);
 }

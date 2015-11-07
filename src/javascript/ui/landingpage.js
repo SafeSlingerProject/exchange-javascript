@@ -6,7 +6,7 @@ SafeSlingerUI.prototype.showServerSecretView = function() {
 	var serverInput = document.createElement("input");
 	serverInput.type = "text";
 	serverInput.id = "server-input";
-	serverInput.innerHTML = "https://01060000t-dot-slinger-dev.appspot.com"
+	serverInput.innerHTML = "https://01060000t-dot-slinger-dev.appspot.com";
 	serverInput.value = "https://01060000t-dot-slinger-dev.appspot.com";
 	serverDiv.insertAdjacentHTML("afterbegin", "Server:");
 	serverDiv.appendChild(serverInput);

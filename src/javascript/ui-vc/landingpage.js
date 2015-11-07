@@ -2,23 +2,6 @@ SafeSlingerUI.prototype.showServerSecretView = function(unique_group_name,
 		attempt_name, numUsers) {
 	var self = this;
 
-	// main video: Never speak the SECRET out loud or display on video.
-	// main video: It is safe to speak your word phrases to release the SECRET.
-	// side bar: Type or paste your SECRET here. (edit box)
-	// side bar: SEND TO THIS HANGOUT. (button)
-	// side bar: Speak or sign any of the following words to find a match. This
-	// ensures no one but the participants in this Hangout can receive the
-	// SECRET. (text)
-	// side bar: word word word (radio 1, non-cut-paste)
-	// side bar: word word word (radio 2, non-cut-paste)
-	// side bar: word word word (radio 3, non-cut-paste)
-	// side bar: Match Selected (button)
-	// side bar: No Match (button)
-	// side bar: Secret sent by User1, SHHHHHH!!!!! Just read it, don’t speak.
-	// (text, able to cut-paste)
-	// side bar: Secret will expire in 0:30 seconds from view (text, auto reset)
-	// side bar: RESET NOW (button)
-
 	console.log("unique_group_name --> " + unique_group_name);
 	console.log("attempt_name --> " + attempt_name);
 	console.log("numUsers --> " + numUsers);
@@ -40,9 +23,9 @@ SafeSlingerUI.prototype.showServerSecretView = function(unique_group_name,
 	self.container.appendChild(usersDiv);
 
 	// --- creating groupname div and input box---//
+	var groupnameDiv = document.createElement("div");
+	groupnameDiv.id = "groupname-div";
 	if (unique_group_name == null || unique_group_name == "") {
-		var groupnameDiv = document.createElement("div");
-		groupnameDiv.id = "groupname-div";
 		var groupnameInput = document.createElement("input");
 		groupnameInput.type = "text";
 		groupnameInput.id = "group-name";
@@ -50,8 +33,6 @@ SafeSlingerUI.prototype.showServerSecretView = function(unique_group_name,
 		groupnameDiv.appendChild(groupnameInput);
 		self.container.appendChild(groupnameDiv);
 	} else {
-		var groupnameDiv = document.createElement("div");
-		groupnameDiv.id = "groupname-div";
 		// groupnameDiv.insertAdjacentHTML("afterbegin", "Group Name: " +
 		// unique_group_name);
 		groupnameDiv.insertAdjacentHTML("afterbegin", "Attempt: "
@@ -108,10 +89,11 @@ SafeSlingerUI.prototype.beginExchange = function(unique_group_name,
 	self.ssExchange.numUsers = numUsers;
 	console.log("numUsers: " + self.ssExchange.numUsers);
 
+	var grpname = null;
 	if (unique_group_name == null || unique_group_name == "") {
-		var grpname = document.getElementById("group-name").value;
+		grpname = document.getElementById("group-name").value;
 	} else {
-		var grpname = unique_group_name + attempt_name;
+		grpname = unique_group_name + attempt_name;
 	}
 	if (grpname == null || grpname == "") {
 		return false;
@@ -137,7 +119,7 @@ SafeSlingerUI.prototype.beginExchange = function(unique_group_name,
 SafeSlingerUI.prototype.progressDataRequest = function() {
 	var self = this;
 	self.progressData();
-}
+};
 
 SafeSlingerUI.prototype.progressData = function() {
 	var self = this;
@@ -153,7 +135,7 @@ SafeSlingerUI.prototype.progressData = function() {
 
 		self.showPhrases(position, hash, decoy1, decoy2);
 	}
-}
+};
 
 SafeSlingerUI.prototype.showPhrases = function(position, hash, decoy1, decoy2) {
 	var self = this;
@@ -277,7 +259,7 @@ SafeSlingerUI.prototype.showPhrases = function(position, hash, decoy1, decoy2) {
 SafeSlingerUI.prototype.progressMatchRequest = function() {
 	var self = this;
 	self.progressMatch();
-}
+};
 
 SafeSlingerUI.prototype.progressMatch = function() {
 	var self = this;
@@ -312,10 +294,11 @@ SafeSlingerUI.prototype.progressMatch = function() {
 		for (var i = 0; i < self.ssExchange.uidSet.length; i++) {
 			var uid = self.ssExchange.uidSet[i];
 			// if (plaintextSet[uid] != null && plaintextSet[uid] != ""){
+			var results = null;
 			if (uid == self.ssExchange.userID) {
-				var results = "My Secret: " + plaintextSet[uid];
+				results = "My Secret: " + plaintextSet[uid];
 			} else {
-				var results = "Their Secret: " + plaintextSet[uid];
+				results = "Their Secret: " + plaintextSet[uid];
 			}
 			var resultDiv = document.createElement("div");
 			resultDiv.id = "plain-set";
@@ -325,4 +308,4 @@ SafeSlingerUI.prototype.progressMatch = function() {
 		}
 	};
 
-}
+};

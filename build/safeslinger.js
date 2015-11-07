@@ -110,7 +110,7 @@ SafeSlinger.HTTPSConnection.prototype.assignUser = function(dataCommitment, call
 	var dataObj = {
 		"ver_client" : String(self.version),
 		"commit_b64" : btoa(packBin)
-	}
+	};
 	//self.doPost("/assignUser", packBin, callback);
 	self.doPostAjax("/assignUser", dataObj, callback);
 };
@@ -136,10 +136,10 @@ SafeSlinger.HTTPSConnection.prototype.syncUsers = function(userID, minID, uidSet
 		"usridlink" : String(minID),
 		"usrids" : uidSet,
 		"commit_b64" : btoa(packBin)
-	}
+	};
 
 	self.doPostAjax('/syncUsers', dataObj, callback); 
-}
+};
 
 SafeSlinger.HTTPSConnection.prototype.syncData = function(userID, protocolCommitment, dhpubkey, uidSet, encryptedData, callback) {
 	var self = this;
@@ -163,10 +163,10 @@ SafeSlinger.HTTPSConnection.prototype.syncData = function(userID, protocolCommit
 		"usrid" : String(userID),
 		"usrids" : uidSet,
 		"data_b64" : btoa(packBin)
-	}
+	};
 
 	self.doPostAjax('/syncData', dataObj, callback);
-}
+};
 
 
 SafeSlinger.HTTPSConnection.prototype.syncSignatures = function(userID, uidSet, sig, callback) {
@@ -189,35 +189,36 @@ SafeSlinger.HTTPSConnection.prototype.syncSignatures = function(userID, uidSet, 
 		"usrid" : String(userID),
 		"usrids" : uidSet,
 		"signature_b64" : btoa(packBin)
-	}
+	};
 
 	self.doPostAjax('/syncSignatures', dataObj, callback);
-}
+};
 
 SafeSlinger.HTTPSConnection.prototype.syncKeyNodes = function(userID, usridpost, keynode, callback) {
 	var self = this;
 	if(!self.connected)
 		return null;
 	console.log("************** HTTP syncKeyNodes *******************");
-	console.log("keynode");
-	console.log(keynode);
-	var pack = SafeSlinger.jspack.Pack('!' + keynode.length + 'B', keynode);
-	console.log("pack");
-	console.log(pack);
-	var packBin = SafeSlinger.util.createBinString(pack);
-	console.log("packBin");
-	console.log(packBin);
-	console.log("PackLen: " + packBin.length);
-
 	var dataObj = {
 		"ver_client" : String(self.version),
 		"usrid" : String(userID),
-		"usridpost" : String(usridpost),
-		"keynode_b64" : btoa(packBin)
+	};
+	if (keynode != null){
+		console.log("keynode");
+		console.log(keynode);
+		var pack = SafeSlinger.jspack.Pack('!' + keynode.length + 'B', keynode);
+		console.log("pack");
+		console.log(pack);
+		var packBin = SafeSlinger.util.createBinString(pack);
+		console.log("packBin");
+		console.log(packBin);
+		console.log("PackLen: " + packBin.length);
+		
+		dataObj.usridpost = String(usridpost);
+		dataObj.keynode_b64 = btoa(packBin);
 	}
-
 	self.doPostAjax('/syncKeyNodes', dataObj, callback);
-}
+};
 
 SafeSlinger.HTTPSConnection.prototype.syncMatch = function(userID, uidSet, matchNonce, callback) {
 	var self = this;
@@ -239,16 +240,16 @@ SafeSlinger.HTTPSConnection.prototype.syncMatch = function(userID, uidSet, match
 		"usrid" : String(userID),
 		"usrids" : uidSet,
 		"matchnonce_b64" : btoa(packBin)
-	}
+	};
 
 	self.doPostAjax('/syncMatch', dataObj, callback);
-}
+};
 
 
 SafeSlinger.SafeSlingerExchange = function (address){
 	var self = this;
 
-	// TODO: check at runtime for compatible browsers supporting CryptoJS:
+	// TODO: check at runtime for compatible browsers supporting CryptoJS
 	
 	// networking object
 	self.version = 1 << 24 | 8 << 16;
@@ -282,7 +283,7 @@ SafeSlinger.SafeSlingerExchange = function (address){
 	self.dhpubkeySet = {};
 	self.receivedcipherSet = {};
 	self.signatureSet = {};
-	self.keyNodes = {};
+	self.keyNodeSet = {};
 	self.encMatchNonceSet = {};
 	self.matchNonceSet = {};
 	self.dataSet = {};
@@ -358,7 +359,7 @@ SafeSlinger.SafeSlingerExchange.prototype.assignUser = function (response) {
 	console.log(self.dhpubkeySet[self.userID].toString());
 	console.log(self.receivedcipherSet[self.userID].toString());
 	return self.userID;
-}
+};
 
 SafeSlinger.SafeSlingerExchange.prototype.syncUsersRequest = function (lowNum, callback){
 	var self = this;
@@ -370,7 +371,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncUsersRequest = function (lowNum, c
 	
 	self.httpclient.syncUsers(self.userID, lowNum, self.uidSet, 
 		SafeSlinger.util.parseHexString(self.dataCommitment.toString()), callback);
-}
+};
 
 SafeSlinger.SafeSlingerExchange.prototype.syncUsers = function (response){
 	var self = this;
@@ -379,7 +380,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncUsers = function (response){
 
 	var server = response.ver_server;
 	var low_client = response.ver_low_client;
-	var total = response.com_total;
+	var total = parseInt(response.com_total);
 	var deltas = response.com_deltas;
 	console.log(deltas);
 	var delta_count = deltas.length;
@@ -420,7 +421,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncUsers = function (response){
 		});
 	}
 	console.log("done");  
-}
+};
 
 SafeSlinger.SafeSlingerExchange.prototype.syncDataRequest = function (callback){
 	var self = this;
@@ -433,7 +434,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncDataRequest = function (callback){
 
 	self.httpclient.syncData(self.userID, protoCommit, 
 		dhpubkey, self.uidSet, encryptedData, callback);
-}
+};
 
 SafeSlinger.SafeSlingerExchange.prototype.syncData = function (response) {
 	var self = this;
@@ -514,7 +515,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncData = function (response) {
 		// ui must check state from outside for all data elements before continuing
 	 }
 	 console.log("done");  
-}
+};
 
 SafeSlinger.SafeSlingerExchange.prototype.syncSignaturesRequest = function (selectedHash, callback){
 	var self = this;
@@ -523,17 +524,17 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignaturesRequest = function (sele
 	self.uidSet = [];
 	self.uidSet.push(self.userID);
 	console.log(self.uidSet);
-	self.correctSig = false;
+	var sig1 = null;
+	var sig2 = null;
 
 	if (selectedHash != null && selectedHash.toString() == self.getHash24Bits().toString()) {
 		self.correctSig = true;
-		// match
-		var sig1 = self.matchExtrahash;
-		var sig2 = self.wrongHash;
+		sig1 = self.matchExtrahash;
+		sig2 = self.wrongHash;
 	} else {
-		// wrong
-		var sig1 = self.matchHash;
-		var sig2 = self.wrongNonce;
+		self.correctSig = false;
+		sig1 = self.matchHash;
+		sig2 = self.wrongNonce;
 	}
 	var sigWords = CryptoJS.enc.Latin1.parse(sig1.toString(CryptoJS.enc.Latin1) + sig2.toString(CryptoJS.enc.Latin1));
 	self.sig = sigWords;
@@ -542,7 +543,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignaturesRequest = function (sele
 	
 	self.httpclient.syncSignatures(self.userID, self.uidSet, 
 			SafeSlinger.util.parseHexString(self.sig.toString()), callback);
-}
+};
 
 SafeSlinger.SafeSlingerExchange.prototype.syncSignatures = function (response){
 	var self = this;
@@ -550,7 +551,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignatures = function (response){
 	console.log(response);
 
 	var server = response.ver_server;
-	var total = response.sig_total;
+	var total = parseInt(response.sig_total);
 	var deltas = response.sig_deltas;
 	console.log(deltas);
 	var delta_count = deltas.length;
@@ -615,45 +616,53 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignatures = function (response){
 		});
 	}
 	console.log("done");  
-}
+};
 
 SafeSlinger.SafeSlingerExchange.prototype.syncKeyNodesRequest = function (callback){
 	var self = this;
-		
-	if (self.numUsers == 2) {
-		for(var i = 0; i < self.uidSet.length; i++){
-			if (self.uidSet[i] != self.userID) {
-				var uidOther = self.uidSet[i];
-			}
-		}
-		var dh = new SafeSlinger.DiffieHellman();
-		var pub = str2bigInt(self.dhpubkeySet[uidOther].toString(), 16, 1536);
-		var pri = str2bigInt(self.dhkey.toString(), 16, 1536);
-		self.groupKey = CryptoJS.enc.Hex.parse(bigInt2str(dh.computeSecret(pub, pri), 16));
-		console.log("Group Secret Key: " + self.groupKey);
+	self.nodepos = 1;
 
-		self.encMatchNonceSet[self.userID] = CryptoJS.AES.encrypt(
-				self.matchNonce, 
-				getAesKeyWords(self.groupKey), 
-				{ iv: getAesIvWords(self.groupKey), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
-			).ciphertext;
-		console.log("Encrypted Match Nonce: " + self.encMatchNonceSet[self.userID]);
-		
-		self.syncMatchRequest(function (response){
-			self.syncMatch(response);
-		});
-	} else {
-		self.numKeyNodes_Recv = 1;
+	// determine user's position
+	self.uidSet.sort();
+	self.mypos = self.uidSet.indexOf(self.userID);
+	self.keyNodeBackoffSecs = self.mypos > 2 ? 0 : 1000;
+
+	if (self.mypos < 2) {
+		// begin root of key node
+		var uidOther = self.mypos == 0 ? self.uidSet[1] : self.uidSet[0];		
+		genNodeAndStore(self, self.dhpubkeySet[uidOther], self.dhkey, uidOther);		
+	} 
+
+	if (self.numUsers > 2) {
+		// on to keyNodes sync online...
 		self.attempt = 1;
-		self.uidSet = [];
-		self.uidSet.push(self.userID);
-		console.log(self.uidSet);
 
-		// TODO: compute key nodes for 3+
-
-		self.httpclient.syncKeyNodes(self.userID, self.userIdPost, 
-				SafeSlinger.util.parseHexString(self.nextNodePubKey.toString()), callback);
+		if (self.mypos < 2) {
+			// node push
+			self.httpclient.syncKeyNodes(self.userID, self.uidSet[self.nodepos + 1], 
+					SafeSlinger.util.parseHexString(self.keyNodeSet[uidOther].toString()), callback);
+		} else {
+			// node pull
+			self.httpclient.syncKeyNodes(self.userID, null, null, callback);
+		}
+	} else {
+		// for 2 only, use secret as is
+		useGroupKeyEncSendMatch(self);
 	}
+};
+
+function genNodeAndStore(self, pubKey, priKey, usrid) {
+	var pub = str2bigInt(pubKey.toString(), 16, 1536);
+	var pri = str2bigInt(priKey.toString(), 16, 1536);
+
+	// generate current node, secret
+	var dh = new SafeSlinger.DiffieHellman();
+	var secret = dh.computeSecret(pub, pri);
+	self.groupKey = CryptoJS.enc.Hex.parse(bigInt2str(secret, 16));
+	console.log("Group Secret Key: " + self.groupKey);
+
+	// store pub node...
+	self.keyNodeSet[usrid] = CryptoJS.enc.Hex.parse(bigInt2str(dh.publicKey, 16));
 }
 
 SafeSlinger.SafeSlingerExchange.prototype.syncKeyNodes = function (response){
@@ -662,36 +671,76 @@ SafeSlinger.SafeSlingerExchange.prototype.syncKeyNodes = function (response){
 	console.log(response);
 
 	var server = response.ver_server;
-	var total = response.node_total;
+	var total = parseInt(response.node_total);
 
-	if(total < 0){
-		self.offset = 16;
-		var KeyNode = CryptoJS.enc.Latin1.parse(atob(response.keynode_b64));
-		self.keyNodes[uid] = KeyNode;
-
-		console.log(uid +"'s keynode: " + self.keyNodes[uid]);
-
-		self.numKeyNodes_Recv++;
-		console.log("Received " + self.numKeyNodes_Recv + "/" + self.numKeyNodes + " Items");
-	}
+	if (self.mypos >= 2) {
+		if(total > 0){
+			var uid = self.uidSet[self.mypos];
+			// C, D, ..., n: waiting for node, recieved their own
+			self.offset = 16;
+			var KeyNode = CryptoJS.enc.Latin1.parse(atob(response.keynode_b64));
+			self.keyNodeSet[uid] = KeyNode;
 	
-	if(self.numKeyNodes_Recv < self.numUsers){
+			console.log(uid +"'s keynode: " + self.keyNodeSet[uid]);
+	
+			console.log("Received " + total + "/" + 1 + " Items");
+			
+			// immediately compute remaining tree from mypos on...
+			self.nodepos = self.mypos;
+			// use my private key as private key
+			genNodeAndStore(self, self.keyNodeSet[uid], self.dhkey, uid);		
+			for(var i = self.nodepos; (i+1) < self.numUsers; i++){
+				self.nodepos++;
+				// use gen secret as private key
+				var uid = self.uidSet[self.nodepos];
+				genNodeAndStore(self, self.dhpubkeySet[uid], self.groupKey, uid);		
+			}				
+		} 
+	} else {
+		// A & B deliver next node if any remain...
+		self.nodepos++;
+		// use gen secret as private key
+		var uid = self.uidSet[self.nodepos];
+		genNodeAndStore(self, self.dhpubkeySet[uid], self.groupKey, uid);		
+	} 	
+		
+	if((self.nodepos+1) < self.numUsers){
 		setTimeout(function() { 
 			self.attempt++;
-			self.httpclient.syncKeyNodes(self.userID, self.uidSet, 
-				SafeSlinger.util.parseHexString(self.nextNodePubKey.toString()), function (response){
-					self.syncKeyNodes(response);
-				});
-		}, fibonacci(self.attempt) * 1000);
+			if (self.mypos < 2) {
+				// node push
+				self.httpclient.syncKeyNodes(self.userID, self.uidSet[self.nodepos + 1], 
+					SafeSlinger.util.parseHexString(self.keyNodeSet[self.uidSet[self.nodepos]].toString()), function (response){
+						self.syncKeyNodes(response);
+					});
+			} else {
+				// node pull
+				self.httpclient.syncKeyNodes(self.userID, null, null, 
+					function (response){
+						self.syncKeyNodes(response);
+					});
+			}
+		}, fibonacci(self.attempt) * self.keyNodeBackoffSecs);
 	}else{
 		console.log("All KeyNodes received");
-		console.log(self.keyNodes);
+		console.log(self.keyNodeSet);
 
-		self.syncMatchRequest(function (response){
-			self.syncMatch(response);
-		});
+		useGroupKeyEncSendMatch(self);
 	}
 	console.log("done");  
+};
+
+function useGroupKeyEncSendMatch(self){
+	self.encMatchNonceSet[self.userID] = CryptoJS.AES.encrypt(
+		self.matchNonce, 
+		getAesKeyWords(self.groupKey), 
+		{ iv: getAesIvWords(self.groupKey), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+	).ciphertext;
+	console.log("Encrypted Match Nonce: " + self.encMatchNonceSet[self.userID]);
+	
+	self.syncMatchRequest(function (response){
+		self.syncMatch(response);
+	});
 }
 
 SafeSlinger.SafeSlingerExchange.prototype.syncMatchRequest = function (callback){
@@ -704,7 +753,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncMatchRequest = function (callback)
 	
 	self.httpclient.syncMatch(self.userID, self.uidSet, 
 		SafeSlinger.util.parseHexString(self.encMatchNonceSet[self.userID].toString()), callback);
-}
+};
 
 SafeSlinger.SafeSlingerExchange.prototype.syncMatch = function (response){
 	var self = this;
@@ -712,7 +761,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncMatch = function (response){
 	console.log(response);
 
 	var server = response.ver_server;
-	var total = response.match_total;
+	var total = parseInt(response.match_total);
 	var deltas = response.match_deltas;
 	console.log(deltas);
 	var delta_count = deltas.length;
@@ -771,7 +820,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncMatch = function (response){
 		// ui must check state from outside for all data elements before continuing
 	}
 	console.log("done");  
-}
+};
 
 function fibonacci(n) {
     if (n == 0) {
@@ -797,40 +846,40 @@ function getAesIvWords(key){
 SafeSlinger.SafeSlingerExchange.prototype.getPosition = function () {
 	var self = this;	
 	return self.correctSelection;
-}
+};
 
 SafeSlinger.SafeSlingerExchange.prototype.getHash24Bits = function () {
 	var self = this;	
 	return SafeSlinger.util.parseHexString(self.hash.toString().substring(0,6));
-}
+};
 
 SafeSlinger.SafeSlingerExchange.prototype.getDecoy24Bits1 = function () {
 	var self = this;	
 	return SafeSlinger.util.parseHexString(self.decoy1.toString().substring(0,6));
-}
+};
 
 SafeSlinger.SafeSlingerExchange.prototype.getDecoy24Bits2 = function () {
 	var self = this;	
 	return SafeSlinger.util.parseHexString(self.decoy2.toString().substring(0,6));
-}
+};
 
 SafeSlinger.SafeSlingerExchange.prototype.isDataComplete = function () {
 	var self = this;	
 	var boolData = Object.keys(self.receivedcipherSet).length >= self.numUsers;
 	return boolData;
-}
+};
 
 SafeSlinger.SafeSlingerExchange.prototype.getDataSet = function () {
 	var self = this;	
 	return self.dataSet;
-}
+};
 
 SafeSlinger.SafeSlingerExchange.prototype.isMatchComplete = function () {
 	var self = this;	
 	var boolData = Object.keys(self.dataSet).length == self.numUsers;
 	return boolData;
-}
-SafeSlinger.DiffieHellman = function () {
+};
+SafeSlinger.DiffieHellman = function() {
 	var self = this;
 	self.primeStr = "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA237327FFFFFFFFFFFFFFFF";
 	self.prime = str2bigInt(self.primeStr, 16, 1536);
@@ -838,26 +887,33 @@ SafeSlinger.DiffieHellman = function () {
 	self.generator = str2bigInt(self.generatorStr, 16, 4);
 };
 
-SafeSlinger.DiffieHellman.prototype.genKeys = function (){
+SafeSlinger.DiffieHellman.prototype.genKeys = function() {
 	var self = this;
 	self.privateKey = randBigInt(1536);
-	console.log(bigInt2str(powMod(self.generator, self.privateKey, self.prime), 16));
-	self.publicKey = powMod(self.generator, self.privateKey, self.prime);
-}
+	var pubKey = powMod(self.generator, self.privateKey, self.prime);
+	console.log(bigInt2str(pubKey, 16));
+	self.publicKey = pubKey;
+};
 
-SafeSlinger.DiffieHellman.prototype.computeSecret = function (pubKey, privateKey){
+SafeSlinger.DiffieHellman.prototype.computeSecret = function(publicKey, privateKey) {
 	var self = this;
-	console.log(bigInt2str(powMod(pubKey, privateKey, self.prime), 16));
-	return powMod(pubKey, privateKey, self.prime);
-}
+	var secret = powMod(publicKey, privateKey, self.prime);
+	console.log(bigInt2str(secret, 16));
 
-SafeSlinger.DiffieHellman.prototype.showParams = function (){
+	var pubKey = powMod(self.generator, secret, self.prime);
+	console.log(bigInt2str(pubKey, 16));
+	self.publicKey = pubKey;
+
+	return secret;
+};
+
+SafeSlinger.DiffieHellman.prototype.showParams = function() {
 	var self = this;
 	console.log("Prime: " + bigInt2str(self.prime, 16));
 	console.log("Generator: " + bigInt2str(self.generator, 16));
 	console.log("Private Key: " + bigInt2str(self.privateKey, 16));
-	console.log("Public Key: "  + bigInt2str(self.publicKey, 16));
-}
+	console.log("Public Key: " + bigInt2str(self.publicKey, 16));
+};
 SafeSlinger.util = {};
 
 SafeSlinger.util.parseHexString = function(str) {
@@ -897,12 +953,12 @@ SafeSlinger.util.createBinString = function(arr) {
 
 SafeSlinger.util.getNumberPhrase = function(arr) {
 	return (arr[0] + 1) + " " + (arr[1] + 256 + 1) + " " + (arr[2] + 1);
-}
+};
 
 SafeSlinger.util.getWordPhrase = function(arr) {
 	return (evenWords[arr[0]]) + " " + (oddWords[arr[1]]) + " "
 			+ (evenWords[arr[2]]);
-}
+};
 
 var evenWords = [ "aardvark", "absurd", "accrue", "acme", "adrift", "adult",
 		"afflict", "ahead", "aimless", "Algol", "allow", "alone", "ammo",

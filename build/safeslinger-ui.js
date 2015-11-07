@@ -38,7 +38,7 @@ SafeSlingerUI.prototype.showServerSecretView = function() {
 	var serverInput = document.createElement("input");
 	serverInput.type = "text";
 	serverInput.id = "server-input";
-	serverInput.innerHTML = "https://01060000t-dot-slinger-dev.appspot.com"
+	serverInput.innerHTML = "https://01060000t-dot-slinger-dev.appspot.com";
 	serverInput.value = "https://01060000t-dot-slinger-dev.appspot.com";
 	serverDiv.insertAdjacentHTML("afterbegin", "Server:");
 	serverDiv.appendChild(serverInput);
@@ -145,7 +145,7 @@ SafeSlingerUI.prototype.showGroupingNumber = function(userID) {
 SafeSlingerUI.prototype.progressDataRequest = function (){
 	var self = this;
 	self.progressData(); 					
-}
+};
 
 SafeSlingerUI.prototype.progressData = function (){
 	var self = this;
@@ -160,7 +160,7 @@ SafeSlingerUI.prototype.progressData = function (){
 		var decoy2 = self.ssExchange.getDecoy24Bits2();	
 		self.showPhrases(position, hash, decoy1, decoy2);
 	}
-}
+};
 SafeSlingerUI.prototype.showPhrases = function(position, hash, decoy1, decoy2) {
 	var self = this;
 	var selected = null;
@@ -270,7 +270,7 @@ SafeSlingerUI.prototype.showPhrases = function(position, hash, decoy1, decoy2) {
 SafeSlingerUI.prototype.progressMatchRequest = function (){
 	var self = this;
 	self.progressMatch(); 					
-}
+};
 
 SafeSlingerUI.prototype.progressMatch = function (){
 	var self = this;
@@ -282,7 +282,7 @@ SafeSlingerUI.prototype.progressMatch = function (){
 		var dataSet = self.ssExchange.getDataSet();	
 		self.showResults(dataSet);
 	}
-}
+};
 
 SafeSlingerUI.prototype.showResults = function(plaintextSet) {
 	var self = this;

@@ -107,7 +107,7 @@ SafeSlingerUI.prototype.showPhrases = function(position, hash, decoy1, decoy2) {
 SafeSlingerUI.prototype.progressMatchRequest = function (){
 	var self = this;
 	self.progressMatch(); 					
-}
+};
 
 SafeSlingerUI.prototype.progressMatch = function (){
 	var self = this;
@@ -119,4 +119,4 @@ SafeSlingerUI.prototype.progressMatch = function (){
 		var dataSet = self.ssExchange.getDataSet();	
 		self.showResults(dataSet);
 	}
-}
+};

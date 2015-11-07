@@ -80,7 +80,7 @@ SafeSlinger.HTTPSConnection.prototype.assignUser = function(dataCommitment, call
 	var dataObj = {
 		"ver_client" : String(self.version),
 		"commit_b64" : btoa(packBin)
-	}
+	};
 	//self.doPost("/assignUser", packBin, callback);
 	self.doPostAjax("/assignUser", dataObj, callback);
 };
@@ -106,10 +106,10 @@ SafeSlinger.HTTPSConnection.prototype.syncUsers = function(userID, minID, uidSet
 		"usridlink" : String(minID),
 		"usrids" : uidSet,
 		"commit_b64" : btoa(packBin)
-	}
+	};
 
 	self.doPostAjax('/syncUsers', dataObj, callback); 
-}
+};
 
 SafeSlinger.HTTPSConnection.prototype.syncData = function(userID, protocolCommitment, dhpubkey, uidSet, encryptedData, callback) {
 	var self = this;
@@ -133,10 +133,10 @@ SafeSlinger.HTTPSConnection.prototype.syncData = function(userID, protocolCommit
 		"usrid" : String(userID),
 		"usrids" : uidSet,
 		"data_b64" : btoa(packBin)
-	}
+	};
 
 	self.doPostAjax('/syncData', dataObj, callback);
-}
+};
 
 
 SafeSlinger.HTTPSConnection.prototype.syncSignatures = function(userID, uidSet, sig, callback) {
@@ -159,35 +159,36 @@ SafeSlinger.HTTPSConnection.prototype.syncSignatures = function(userID, uidSet, 
 		"usrid" : String(userID),
 		"usrids" : uidSet,
 		"signature_b64" : btoa(packBin)
-	}
+	};
 
 	self.doPostAjax('/syncSignatures', dataObj, callback);
-}
+};
 
 SafeSlinger.HTTPSConnection.prototype.syncKeyNodes = function(userID, usridpost, keynode, callback) {
 	var self = this;
 	if(!self.connected)
 		return null;
 	console.log("************** HTTP syncKeyNodes *******************");
-	console.log("keynode");
-	console.log(keynode);
-	var pack = SafeSlinger.jspack.Pack('!' + keynode.length + 'B', keynode);
-	console.log("pack");
-	console.log(pack);
-	var packBin = SafeSlinger.util.createBinString(pack);
-	console.log("packBin");
-	console.log(packBin);
-	console.log("PackLen: " + packBin.length);
-
 	var dataObj = {
 		"ver_client" : String(self.version),
 		"usrid" : String(userID),
-		"usridpost" : String(usridpost),
-		"keynode_b64" : btoa(packBin)
+	};
+	if (keynode != null){
+		console.log("keynode");
+		console.log(keynode);
+		var pack = SafeSlinger.jspack.Pack('!' + keynode.length + 'B', keynode);
+		console.log("pack");
+		console.log(pack);
+		var packBin = SafeSlinger.util.createBinString(pack);
+		console.log("packBin");
+		console.log(packBin);
+		console.log("PackLen: " + packBin.length);
+		
+		dataObj.usridpost = String(usridpost);
+		dataObj.keynode_b64 = btoa(packBin);
 	}
-
 	self.doPostAjax('/syncKeyNodes', dataObj, callback);
-}
+};
 
 SafeSlinger.HTTPSConnection.prototype.syncMatch = function(userID, uidSet, matchNonce, callback) {
 	var self = this;
@@ -209,8 +210,8 @@ SafeSlinger.HTTPSConnection.prototype.syncMatch = function(userID, uidSet, match
 		"usrid" : String(userID),
 		"usrids" : uidSet,
 		"matchnonce_b64" : btoa(packBin)
-	}
+	};
 
 	self.doPostAjax('/syncMatch', dataObj, callback);
-}
+};
 

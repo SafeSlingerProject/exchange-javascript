@@ -37,12 +37,12 @@ SafeSlinger.util.createBinString = function(arr) {
 
 SafeSlinger.util.getNumberPhrase = function(arr) {
 	return (arr[0] + 1) + " " + (arr[1] + 256 + 1) + " " + (arr[2] + 1);
-}
+};
 
 SafeSlinger.util.getWordPhrase = function(arr) {
 	return (evenWords[arr[0]]) + " " + (oddWords[arr[1]]) + " "
 			+ (evenWords[arr[2]]);
-}
+};
 
 var evenWords = [ "aardvark", "absurd", "accrue", "acme", "adrift", "adult",
 		"afflict", "ahead", "aimless", "Algol", "allow", "alone", "ammo",

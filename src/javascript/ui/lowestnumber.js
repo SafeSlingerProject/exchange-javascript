@@ -32,7 +32,7 @@ SafeSlingerUI.prototype.showGroupingNumber = function(userID) {
 SafeSlingerUI.prototype.progressDataRequest = function (){
 	var self = this;
 	self.progressData(); 					
-}
+};
 
 SafeSlingerUI.prototype.progressData = function (){
 	var self = this;
@@ -47,4 +47,4 @@ SafeSlingerUI.prototype.progressData = function (){
 		var decoy2 = self.ssExchange.getDecoy24Bits2();	
 		self.showPhrases(position, hash, decoy1, decoy2);
 	}
-}
+};

@@ -585,11 +585,11 @@ function fibonacci(n) {
 }
 
 function getAesKeyWords(key){
-	return CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(CryptoJS.enc.Utf8.stringify("1") + CryptoJS.enc.Latin1.stringify(key)), {outputLength: 256});
+	return CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(CryptoJS.enc.Latin1.stringify(CryptoJS.enc.Utf8.parse("1")) + CryptoJS.enc.Latin1.stringify(key)), {outputLength: 256});
 }
 
 function getAesIvWords(key){
-	var words = CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(CryptoJS.enc.Utf8.stringify("2") + CryptoJS.enc.Latin1.stringify(key)), {outputLength: 256});
+	var words = CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(CryptoJS.enc.Latin1.stringify(CryptoJS.enc.Utf8.parse("2")) + CryptoJS.enc.Latin1.stringify(key)), {outputLength: 256});
 	var latin = CryptoJS.enc.Latin1.stringify(words);
 	var substring = latin.substring(0, 16); // truncate to 128 bits
 	return CryptoJS.enc.Latin1.parse(substring);

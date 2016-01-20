@@ -251,6 +251,27 @@ SafeSlinger.SafeSlingerExchange = function (address){
 
 	// TODO: check at runtime for compatible browsers supporting CryptoJS
 	
+//	Recommendations in the node.js community is that you pass errors around in callbacks (Because errors only occur for asynchronous operations) as the first argument
+//	fs.readFile(uri, function (err, fileData) {
+//	    if (err) {
+//	        // handle
+//	        // A. give the error to someone else
+//	        return callback(err)
+//	        // B. recover logic
+//	        return recoverElegantly(err)
+//	        // C. Crash and burn
+//	        throw err
+//	    }
+//	    // success case, handle nicely
+//	})
+	
+//	Just pass the proper response to any error as a function, e.g.:
+//	setTimeout(function () {
+//	    do_something_that_calls_err(function(err) {
+//	        alert("Something went wrong, namely this: " + err);
+//	    }),
+//	    1000);
+	
 	// networking object
 	self.version = 1 << 24 | 8 << 16;
 	self.address = address;
@@ -294,8 +315,6 @@ SafeSlinger.SafeSlingerExchange.prototype.beginExchange = function (data) {
 	self.data = data;
 	console.log("Data: " + self.data);
 	
-	// TODO: Determine if CryptoJS.lib.WordArray.random() or window.crypto.getRandomValues() is better
-	
 	self.matchNonce = CryptoJS.lib.WordArray.random(256/8);	
 	console.log("Match Nonce: " + self.matchNonce);
 	self.wrongNonce = CryptoJS.lib.WordArray.random(256/8);	
@@ -307,11 +326,7 @@ SafeSlinger.SafeSlingerExchange.prototype.beginExchange = function (data) {
 	console.log("Match Hash: " + self.matchHash);
 	console.log("Wrong Hash: " + self.wrongHash);
 
-	self.encryptedData = CryptoJS.AES.encrypt(
-			data, 
-			getAesKeyWords(self.matchNonce), 
-			{ iv: getAesIvWords(self.matchNonce), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7  }
-		).ciphertext;
+	self.encryptedData = aesEncrypt(data, self.matchNonce);
 	console.log("Encrypted Data: " + self.encryptedData);
 
 	var protWords = CryptoJS.enc.Hex.parse(self.matchHash.toString() + self.wrongHash.toString());
@@ -573,8 +588,8 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignatures = function (response){
 				console.log(uid +"'s match sig protoCommit: " + 
 						CryptoJS.SHA3(
 							CryptoJS.enc.Latin1.parse( 
-								CryptoJS.SHA3(atob(deltas[i].signature_b64).substring(0,32).toString(CryptoJS.enc.Latin1), {outputLength: 256}).toString(CryptoJS.enc.Latin1) + 
-								atob(deltas[i].signature_b64).substring(32)
+								CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(self.signatureSet[uid].toString(CryptoJS.enc.Latin1).substring(0,32)), {outputLength: 256}).toString(CryptoJS.enc.Latin1) + 
+								self.signatureSet[uid].toString(CryptoJS.enc.Latin1).substring(32)
 							), 
 							{outputLength: 256}
 						)
@@ -582,8 +597,8 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignatures = function (response){
 				console.log(uid +"'s wrong sig protoCommit: " + 
 					CryptoJS.SHA3(
 						CryptoJS.enc.Latin1.parse( 
-							atob(deltas[i].signature_b64).substring(0,32) + 
-							CryptoJS.SHA3(atob(deltas[i].signature_b64).substring(32).toString(CryptoJS.enc.Latin1), {outputLength: 256}).toString(CryptoJS.enc.Latin1) 
+							self.signatureSet[uid].toString(CryptoJS.enc.Latin1).substring(0,32) + 
+							CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(self.signatureSet[uid].toString(CryptoJS.enc.Latin1).substring(32)), {outputLength: 256}).toString(CryptoJS.enc.Latin1) 
 						), 
 						{outputLength: 256}
 					)
@@ -731,11 +746,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncKeyNodes = function (response){
 };
 
 function useGroupKeyEncSendMatch(self){
-	self.encMatchNonceSet[self.userID] = CryptoJS.AES.encrypt(
-		self.matchNonce, 
-		getAesKeyWords(self.groupKey), 
-		{ iv: getAesIvWords(self.groupKey), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
-	).ciphertext;
+	self.encMatchNonceSet[self.userID] = aesEncrypt(self.matchNonce, self.groupKey);
 	console.log("Encrypted Match Nonce: " + self.encMatchNonceSet[self.userID]);
 	
 	self.syncMatchRequest(function (response){
@@ -798,22 +809,19 @@ SafeSlinger.SafeSlingerExchange.prototype.syncMatch = function (response){
 		for(var i = 0 ;i < self.numUsers; i++){
 			var uid = self.uidSet[i];
 			// decrypt recieved match nonces with shared secret
-			var decNonce = CryptoJS.AES.decrypt(
-					{ ciphertext: self.encMatchNonceSet[uid] }, 
-					getAesKeyWords(self.groupKey), 
-					{ iv: getAesIvWords(self.groupKey), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
-			);
-			self.matchNonceSet[uid] = decNonce;
+			var decNonce = aesDecrypt(self.encMatchNonceSet[uid], self.groupKey);
+			// manually remove extra block stupidly remaining on decrypted plaintext before storage
+			self.matchNonceSet[uid] = CryptoJS.enc.Latin1.parse(decNonce.toString(CryptoJS.enc.Latin1).substring(0,32)); 
 			console.log(uid +"'s Decrypted Match Nonce: " + self.matchNonceSet[uid]);
 
 		 	// TODO: verify all data received hashes to each previous commitment received
-			
+
+			console.log(uid +"'s matchSigPart: " + CryptoJS.enc.Latin1.parse(self.signatureSet[uid].toString(CryptoJS.enc.Latin1).substring(0,32)));
+			 
+			console.log(uid +"'s matchHash: " + CryptoJS.SHA3(self.matchNonceSet[uid], {outputLength: 256}));
+
 			// decrypt recieved data with recieved match nonces
-			var decData = CryptoJS.AES.decrypt(
-					{ ciphertext: self.receivedcipherSet[uid] }, 
-					getAesKeyWords(self.matchNonceSet[uid]), 
-					{ iv: getAesIvWords(self.matchNonceSet[uid]), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
-			);
+			var decData = aesDecrypt(self.receivedcipherSet[uid], self.matchNonceSet[uid]);
 			self.dataSet[uid] = CryptoJS.enc.Utf8.stringify(decData);
 			console.log(uid +"'s Decrypted Data: " + self.dataSet[uid]);
 		}
@@ -841,6 +849,22 @@ function getAesIvWords(key){
 	var latin = CryptoJS.enc.Latin1.stringify(words);
 	var substring = latin.substring(0, 16); // truncate to 128 bits
 	return CryptoJS.enc.Latin1.parse(substring);
+}
+
+function aesEncrypt(plaintext, key){
+	return CryptoJS.AES.encrypt(
+			plaintext, 
+			getAesKeyWords(key), 
+			{ iv: getAesIvWords(key), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+		).ciphertext;
+}
+
+function aesDecrypt(ciphertext, key){
+	return CryptoJS.AES.decrypt(
+			{ ciphertext: ciphertext }, 
+			getAesKeyWords(key), 
+			{ iv: getAesIvWords(key), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+		);
 }
 
 SafeSlinger.SafeSlingerExchange.prototype.getPosition = function () {

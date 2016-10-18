@@ -30,7 +30,19 @@ module.exports = function(grunt) {
         'src/javascript/ui-vc/module_end.js'],
         dest: 'build/safeslinger-ui-vc.js'
       }
-
+    },
+    uglify: {  
+        options: {  
+            compress: {
+                global_defs: {
+                    DEBUG: false
+                }
+            }  
+        },  
+        applib: {  
+            src: [ 'build/safeslinger.js' ],  
+            dest: 'build/safeslinger.min.js'  
+        }  
     },
     watch: {
       scripts: {
@@ -67,10 +79,11 @@ module.exports = function(grunt) {
     }
   });
   grunt.loadNpmTasks('grunt-contrib-concat');
+  grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
   //grunt.loadNpmTasks('grunt-contrib-jshint');
 
   grunt.registerTask('default', ['build']);
   //grunt.registerTask('build', ['concat:dist', 'concat:ui', 'jshint:dist']);
-  grunt.registerTask('build', ['concat:dist', 'concat:ui', 'concat:uivc']);
+  grunt.registerTask('build', ['concat:dist', 'concat:ui', 'concat:uivc', 'uglify']);
 }

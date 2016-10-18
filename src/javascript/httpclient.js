@@ -4,7 +4,7 @@ SafeSlinger.HTTPSConnection = function (address){
 	self.connected = false;
 	self.connection = null;
 	self.version = 1 << 24 | 8 << 16;
-	if(self.address != ""){
+	if(self.address !== ""){
 		self.connect();
 	}
 };
@@ -173,7 +173,7 @@ SafeSlinger.HTTPSConnection.prototype.syncKeyNodes = function(userID, usridpost,
 		"ver_client" : String(self.version),
 		"usrid" : String(userID),
 	};
-	if (keynode != null){
+	if (keynode !== null){
 		console.log("keynode");
 		console.log(keynode);
 		var pack = SafeSlinger.jspack.Pack('!' + keynode.length + 'B', keynode);

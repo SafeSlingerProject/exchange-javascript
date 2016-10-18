@@ -1,7 +1,7 @@
 SafeSlinger.SafeSlingerExchange = function (address){
 	var self = this;
 
-	// TODO: check at runtime for compatible browsers supporting CryptoJS
+	// TODO (mwfarb): check at runtime for compatible browsers supporting CryptoJS
 	
 //	Recommendations in the node.js community is that you pass errors around in callbacks (Because errors only occur for asynchronous operations) as the first argument
 //	fs.readFile(uri, function (err, fileData) {
@@ -161,7 +161,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncUsers = function (response){
 				var commitment = CryptoJS.enc.Latin1.parse(atob(deltas[i].commit_b64));
 				self.dataCommitmentSet[uid] = commitment;
 
-			 	// TODO: verify all commits are appropriately sized
+			 	// TODO (mwfarb): verify all commits are appropriately sized
 			 	
 				console.log(uid +"'s dataCommitment: " + self.dataCommitmentSet[uid]);
 
@@ -232,7 +232,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncData = function (response) {
 				console.log(uid +"'s dhpubkey: " + self.dhpubkeySet[uid]);
 				console.log(uid +"'s receivedcipher: " + self.receivedcipherSet[uid]);
 
-			 	// TODO: verify all data received hashes to each previous commitment received				
+			 	// TODO (mwfarb): verify all data received hashes to each previous commitment received				
 
 				console.log(uid +"'s data commit: " + self.dataCommitmentSet[uid]);
 				console.log(uid +"'s data hash: " + CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(data), {outputLength: 256}));
@@ -272,11 +272,11 @@ SafeSlinger.SafeSlingerExchange.prototype.syncData = function (response) {
 		self.hash = CryptoJS.SHA3(CryptoJS.enc.Latin1.parse(hash), {outputLength: 256});
 		console.log("Hash: " + self.hash);
 
-		// TODO: assign deterministic decoy values
+		// TODO (mwfarb): assign deterministic decoy values
 		self.decoy1 = CryptoJS.lib.WordArray.random(24/8);	
 		self.decoy2 = CryptoJS.lib.WordArray.random(24/8);	
 
-		// TODO: crypto randomize correct selection
+		// TODO (mwfarb): crypto randomize correct selection
 		self.correctSelection = Math.floor(Math.random() * 3 + 1);
 				
 		// ui must check state from outside for all data elements before continuing
@@ -294,7 +294,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignaturesRequest = function (sele
 	var sig1 = null;
 	var sig2 = null;
 
-	if (selectedHash != null && selectedHash.toString() == self.getHash24Bits().toString()) {
+	if (selectedHash !== null && selectedHash.toString() == self.getHash24Bits().toString()) {
 		self.correctSig = true;
 		sig1 = self.matchExtrahash;
 		sig2 = self.wrongHash;
@@ -334,7 +334,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncSignatures = function (response){
 				
 				console.log(uid +"'s signature: " + self.signatureSet[uid]);
 
-			 	// TODO: verify all data received hashes to each previous commitment received
+			 	// TODO (mwfarb): verify all data received hashes to each previous commitment received
 				
 				console.log(uid +"'s protoCommit: " + self.protoCommitmentSet[uid]);
 				console.log(uid +"'s match sig protoCommit: " + 
@@ -396,7 +396,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncKeyNodesRequest = function (callba
 
 	if (self.mypos < 2) {
 		// begin root of key node
-		var uidOther = self.mypos == 0 ? self.uidSet[1] : self.uidSet[0];		
+		var uidOther = self.mypos === 0 ? self.uidSet[1] : self.uidSet[0];		
 		genNodeAndStore(self, self.dhpubkeySet[uidOther], self.dhkey, uidOther);		
 	} 
 
@@ -443,7 +443,7 @@ SafeSlinger.SafeSlingerExchange.prototype.syncKeyNodes = function (response){
 	if (self.mypos >= 2) {
 		if(total > 0){
 			var uid = self.uidSet[self.mypos];
-			// C, D, ..., n: waiting for node, recieved their own
+			// C, D, ..., n: waiting for node, received their own
 			self.offset = 16;
 			var KeyNode = CryptoJS.enc.Latin1.parse(atob(response.keynode_b64));
 			self.keyNodeSet[uid] = KeyNode;
@@ -560,19 +560,19 @@ SafeSlinger.SafeSlingerExchange.prototype.syncMatch = function (response){
 
 		for(var i = 0 ;i < self.numUsers; i++){
 			var uid = self.uidSet[i];
-			// decrypt recieved match nonces with shared secret
+			// decrypt received match nonces with shared secret
 			var decNonce = aesDecrypt(self.encMatchNonceSet[uid], self.groupKey);
 			// manually remove extra block stupidly remaining on decrypted plaintext before storage
 			self.matchNonceSet[uid] = CryptoJS.enc.Latin1.parse(decNonce.toString(CryptoJS.enc.Latin1).substring(0,32)); 
 			console.log(uid +"'s Decrypted Match Nonce: " + self.matchNonceSet[uid]);
 
-		 	// TODO: verify all data received hashes to each previous commitment received
+		 	// TODO (mwfarb): verify all data received hashes to each previous commitment received
 
 			console.log(uid +"'s matchSigPart: " + CryptoJS.enc.Latin1.parse(self.signatureSet[uid].toString(CryptoJS.enc.Latin1).substring(0,32)));
 			 
 			console.log(uid +"'s matchHash: " + CryptoJS.SHA3(self.matchNonceSet[uid], {outputLength: 256}));
 
-			// decrypt recieved data with recieved match nonces
+			// decrypt received data with received match nonces
 			var decData = aesDecrypt(self.receivedcipherSet[uid], self.matchNonceSet[uid]);
 			self.dataSet[uid] = CryptoJS.enc.Utf8.stringify(decData);
 			console.log(uid +"'s Decrypted Data: " + self.dataSet[uid]);
@@ -583,9 +583,9 @@ SafeSlinger.SafeSlingerExchange.prototype.syncMatch = function (response){
 };
 
 function fibonacci(n) {
-    if (n == 0) {
+    if (n === 0) {
         return 0;
-    } else if (n == 1) {
+    } else if (n === 1) {
         return 1;
     } else {
         return fibonacci(n - 1) + fibonacci(n - 2);
